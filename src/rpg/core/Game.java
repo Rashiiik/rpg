@@ -4,12 +4,14 @@ import rpg.player.Player;
 import rpg.rooms.Room;
 import rpg.rooms.town.Town;
 import rpg.gui.main.GameGUI;
+import rpg.commands.CommandParser;
 
 public class Game {
 
     private Player player;
     private Room currentRoom;
     private GameGUI gui;
+    private CommandParser commandParser;
     private boolean isRunning;
 
     public Game() {
@@ -20,6 +22,7 @@ public class Game {
 
     public void startGame() {
         gui = new GameGUI(this);
+        commandParser = new CommandParser(this); // Initialize command parser
         isRunning = true;
 
         gui.displayMessage("====Welcome to Paradox Protocol====");
@@ -34,41 +37,14 @@ public class Game {
             return;
         }
 
-        String[] parts = input.trim().toLowerCase(). split(" ");
-        String command = parts[0];
-
-        switch (command) {
-            case "help":
-                showHelp();
-                break;
-            case "look":
-                currentRoom.look(this);
-                break;
-            case "stats":
-                showStats();
-                break;
-            case "quit":
-                quit();
-                break;
-            default:
-                gui.displayMessage("Unknown Command. Type 'help' for suggestions.");
+        // Handle quit command directly (since it exits the game)
+        if (input.trim().toLowerCase().equals("quit")) {
+            quit();
+            return;
         }
-    }
 
-    private void showHelp() {
-        gui.displayMessage("Available commands:");
-        gui.displayMessage("- help: Show this help message");
-        gui.displayMessage("- look: Look around the current area");
-        gui.displayMessage("- stats: Show your character stats");
-        gui.displayMessage("- quit: Exit the game");
-    }
-
-    private void showStats() {
-        gui.displayMessage("=== Character Stats ===");
-        gui.displayMessage("Name: " + player.getName());
-        gui.displayMessage("Level: " + player.getLevel());
-        gui.displayMessage("HP: " + player.getHp() + "/" + player.getMaxHp());
-        gui.displayMessage("Gold: " + player.getGold());
+        // Use command parser for all other commands
+        commandParser.parseAndExecute(input);
     }
 
     private void quit() {
@@ -81,5 +57,11 @@ public class Game {
     public Player getPlayer() { return player; }
     public Room getCurrentRoom() { return currentRoom; }
     public GameGUI getGui() { return gui; }
+    public CommandParser getCommandParser() { return commandParser; }
     public boolean isRunning() { return isRunning; }
+
+    // Setters
+    public void setCurrentRoom(Room room) {
+        this.currentRoom = room;
+    }
 }
