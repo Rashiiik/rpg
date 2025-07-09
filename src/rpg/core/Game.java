@@ -2,7 +2,6 @@ package rpg.core;
 
 import rpg.player.Player;
 import rpg.rooms.Room;
-import rpg.rooms.town.Town;
 import rpg.gui.main.GameGUI;
 import rpg.commands.CommandParser;
 
@@ -12,11 +11,13 @@ public class Game {
     private Room currentRoom;
     private GameGUI gui;
     private CommandParser commandParser;
+    private RoomManager roomManager;
     private boolean isRunning;
 
     public Game() {
         this.player = new Player("Vestappen");
-        this.currentRoom = new Town();
+        this.roomManager = new RoomManager();
+        this.currentRoom = roomManager.getStartingRoom();
         this.isRunning = false;
     }
 
@@ -58,6 +59,7 @@ public class Game {
     public Room getCurrentRoom() { return currentRoom; }
     public GameGUI getGui() { return gui; }
     public CommandParser getCommandParser() { return commandParser; }
+    public RoomManager getRoomManager() { return roomManager; }
     public boolean isRunning() { return isRunning; }
 
     // Setters

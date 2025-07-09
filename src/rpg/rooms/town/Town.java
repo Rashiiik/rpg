@@ -7,6 +7,12 @@ public class Town extends Room {
 
     public Town() {
         super("Town Square", "A bustling town square with merchants and travelers.");
+        initializeConnections();
+    }
+
+    private void initializeConnections() {
+        // We'll add connections when other rooms are created
+        // For now, we'll add them in the Game class or a RoomManager
     }
 
     @Override
@@ -14,6 +20,7 @@ public class Town extends Room {
         game.getGui().displayMessage("You are in the " + name);
         game.getGui().displayMessage(description);
         game.getGui().displayMessage("You see paths leading to various locations.");
+        game.getGui().displayMessage("Type 'look' to see available exits.");
     }
 
     @Override
@@ -24,5 +31,7 @@ public class Town extends Room {
         game.getGui().displayMessage("- An inn to the east");
         game.getGui().displayMessage("- A blacksmith to the west");
         game.getGui().displayMessage("- A path to the forest to the south");
+        game.getGui().displayMessage("");
+        displayConnections(game);
     }
 }

@@ -4,6 +4,7 @@ import rpg.core.Game;
 import rpg.commands.general.HelpCommand;
 import rpg.commands.general.StatsCommand;
 import rpg.commands.movement.LookCommand;
+import rpg.commands.movement.GoCommand;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
@@ -23,9 +24,9 @@ public class CommandParser {
         registerCommand("help", new HelpCommand());
         registerCommand("look", new LookCommand());
         registerCommand("stats", new StatsCommand());
+        registerCommand("go", new GoCommand());
 
         // Add more commands as you implement them
-        // registerCommand("go", new GoCommand());
         // registerCommand("take", new TakeCommand());
         // registerCommand("inventory", new InventoryCommand());
         // registerCommand("use", new UseCommand());
