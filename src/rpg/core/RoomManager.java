@@ -4,7 +4,7 @@ import rpg.rooms.Room;
 import rpg.rooms.town.Town;
 import rpg.rooms.town.Shop;
 import rpg.rooms.town.Inn;
-import rpg.rooms.town.Blacksmith;
+import rpg.rooms.town.TownCenter;
 import rpg.rooms.outskirts.Forest;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,14 +24,15 @@ public class RoomManager {
         Town town = new Town();
         Shop shop = new Shop();
         Inn inn = new Inn();
-        Blacksmith blacksmith = new Blacksmith();
+        TownCenter townCenter = new TownCenter();
         Forest forest = new Forest();
 
         // Add rooms to the manager
         rooms.put("town", town);
         rooms.put("shop", shop);
         rooms.put("inn", inn);
-        rooms.put("blacksmith", blacksmith);
+        rooms.put("towncenter", townCenter);
+        rooms.put("center", townCenter);
         rooms.put("forest", forest);
 
         // Set starting room
@@ -42,7 +43,7 @@ public class RoomManager {
         Room town = rooms.get("town");
         Room shop = rooms.get("shop");
         Room inn = rooms.get("inn");
-        Room blacksmith = rooms.get("blacksmith");
+        Room townCenter = rooms.get("towncenter");
         Room forest = rooms.get("forest");
 
         // Town connections
@@ -50,8 +51,9 @@ public class RoomManager {
         town.addConnection("shop", shop);
         town.addConnection("east", inn);
         town.addConnection("inn", inn);
-        town.addConnection("west", blacksmith);
-        town.addConnection("blacksmith", blacksmith);
+        town.addConnection("west", townCenter);
+        town.addConnection("center", townCenter);
+        town.addConnection("towncenter", townCenter);
         town.addConnection("south", forest);
         town.addConnection("forest", forest);
 
@@ -65,10 +67,10 @@ public class RoomManager {
         inn.addConnection("town", town);
         inn.addConnection("back", town);
 
-        // Blacksmith connections (back to town)
-        blacksmith.addConnection("east", town);
-        blacksmith.addConnection("town", town);
-        blacksmith.addConnection("back", town);
+        // Town Center connections (back to town)
+        townCenter.addConnection("east", town);
+        townCenter.addConnection("town", town);
+        townCenter.addConnection("back", town);
 
         // Forest connections (back to town)
         forest.addConnection("north", town);

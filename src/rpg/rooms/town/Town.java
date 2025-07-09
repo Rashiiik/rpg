@@ -29,7 +29,7 @@ public class Town extends Room {
         game.getGui().displayMessage("There are several buildings here:");
         game.getGui().displayMessage("- A shop to the north");
         game.getGui().displayMessage("- An inn to the east");
-        game.getGui().displayMessage("- A blacksmith to the west");
+        game.getGui().displayMessage("- The town hall to the west");
         game.getGui().displayMessage("- A path to the forest to the south");
         game.getGui().displayMessage("");
         displayConnections(game);

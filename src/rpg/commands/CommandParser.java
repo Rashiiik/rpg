@@ -5,6 +5,8 @@ import rpg.commands.general.HelpCommand;
 import rpg.commands.general.StatsCommand;
 import rpg.commands.movement.LookCommand;
 import rpg.commands.movement.GoCommand;
+import rpg.commands.items.InventoryCommand;
+import rpg.commands.items.UseCommand;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
@@ -25,11 +27,11 @@ public class CommandParser {
         registerCommand("look", new LookCommand());
         registerCommand("stats", new StatsCommand());
         registerCommand("go", new GoCommand());
+        registerCommand("inventory", new InventoryCommand());
+        registerCommand("use", new UseCommand());
 
         // Add more commands as you implement them
         // registerCommand("take", new TakeCommand());
-        // registerCommand("inventory", new InventoryCommand());
-        // registerCommand("use", new UseCommand());
         // registerCommand("equip", new EquipCommand());
         // registerCommand("attack", new AttackCommand());
         // registerCommand("buy", new BuyCommand());

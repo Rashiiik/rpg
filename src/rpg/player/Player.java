@@ -2,48 +2,32 @@ package rpg.player;
 
 public class Player {
     private String name;
-    private int level;
     private int hp;
     private int maxHp;
     private int gold;
-    private int experience;
-    private int experienceToNextLevel;
-    private int strength;
-    private int defense;
+    private Inventory inventory;
 
     public Player(String name) {
         this.name = name;
-        this.level = 1;
         this.maxHp = 100;
         this.hp = maxHp;
         this.gold = 50;
-        this.experience = 0;
-        this.experienceToNextLevel = 100;
-        this.strength = 10;
-        this.defense = 5;
+        this.inventory = new Inventory(50); // 50 item slots
     }
 
     // Getters
     public String getName() { return name; }
-    public int getLevel() { return level; }
     public int getHp() { return hp; }
     public int getMaxHp() { return maxHp; }
     public int getGold() { return gold; }
-    public int getExperience() { return experience; }
-    public int getExperienceToNextLevel() { return experienceToNextLevel; }
-    public int getStrength() { return strength; }
-    public int getDefense() { return defense; }
+    public Inventory getInventory() { return inventory; }
 
     // Setters
     public void setName(String name) { this.name = name; }
-    public void setLevel(int level) { this.level = level; }
     public void setHp(int hp) { this.hp = Math.max(0, Math.min(hp, maxHp)); }
     public void setMaxHp(int maxHp) { this.maxHp = maxHp; }
     public void setGold(int gold) { this.gold = Math.max(0, gold); }
-    public void setExperience(int experience) { this.experience = experience; }
-    public void setExperienceToNextLevel(int experienceToNextLevel) { this.experienceToNextLevel = experienceToNextLevel; }
-    public void setStrength(int strength) { this.strength = strength; }
-    public void setDefense(int defense) { this.defense = defense; }
+    public void setInventory(Inventory inventory) { this.inventory = inventory; }
 
     // Utility methods
     public void heal(int amount) {
@@ -66,26 +50,24 @@ public class Player {
         return false;
     }
 
-    public void addExperience(int amount) {
-        experience += amount;
-        checkLevelUp();
+    // Inventory convenience methods
+    public boolean addItem(rpg.items.Item item) {
+        return inventory.addItem(item);
     }
 
-    private void checkLevelUp() {
-        while (experience >= experienceToNextLevel) {
-            levelUp();
-        }
+    public boolean removeItem(rpg.items.Item item) {
+        return inventory.removeItem(item);
     }
 
-    private void levelUp() {
-        level++;
-        experience -= experienceToNextLevel;
-        experienceToNextLevel = level * 100; // Simple formula
+    public boolean removeItem(String itemName) {
+        return inventory.removeItem(itemName);
+    }
 
-        // Increase stats on level up
-        maxHp += 20;
-        hp = maxHp; // Full heal on level up
-        strength += 2;
-        defense += 1;
+    public boolean hasItem(String itemName) {
+        return inventory.hasItem(itemName);
+    }
+
+    public rpg.items.Item findItem(String itemName) {
+        return inventory.findItem(itemName);
     }
 }
