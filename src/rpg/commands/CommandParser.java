@@ -23,12 +23,6 @@ public class CommandParser {
     private Map<String, Command> commands;
     private Game game;
 
-    // Common words to filter out
-    private static final Set<String> FILLER_WORDS = new HashSet<>(Arrays.asList(
-            "a", "an", "the", "i", "want", "would", "like", "please", "can",
-            "could", "should", "will", "shall", "to", "at", "by", "for", "with", "from"
-    ));
-
     // All possible command words (including aliases) mapped to their primary command
     private static final Map<String, String> ALL_COMMAND_WORDS = new HashMap<>();
     static {
@@ -50,7 +44,6 @@ public class CommandParser {
         ALL_COMMAND_WORDS.put("inventory", "inventory");
         ALL_COMMAND_WORDS.put("inv", "inventory");
         ALL_COMMAND_WORDS.put("bag", "inventory");
-        // Note: "i" is handled as a special case in parseAndExecute
 
         // Stats command variants
         ALL_COMMAND_WORDS.put("stats", "stats");
@@ -103,6 +96,33 @@ public class CommandParser {
             "back", "forward", "left", "right", "shop", "store", "market",
             "inn", "tavern", "home", "house", "castle", "forest", "town",
             "city", "village", "exit", "entrance", "door", "gate"
+    ));
+
+    // Known game objects/items that are meaningful as arguments
+    private static final Set<String> GAME_OBJECTS = new HashSet<>(Arrays.asList(
+            "potion", "coin", "coins", "compass", "sword", "bullet", "bullets",
+            "key", "keys", "gem", "gems", "ring", "rings", "shield", "armor",
+            "bow", "arrow", "arrows", "scroll", "scrolls", "book", "books",
+            "torch", "torches", "rope", "food", "bread", "water", "wine",
+            "health", "mana", "magic", "spell", "spells", "counter", "table",
+            "chest", "door", "altar", "statue", "fountain", "well", "tree",
+            "rock", "stone", "wall", "floor", "ceiling", "window", "chair",
+            "bed", "barrel", "crate", "box", "lever", "button", "switch"
+    ));
+
+    // Common filler words that should be ignored
+    private static final Set<String> FILLER_WORDS = new HashSet<>(Arrays.asList(
+            "a", "an", "the", "i", "want", "would", "like", "please", "can",
+            "could", "should", "will", "shall", "to", "at", "by", "for", "with",
+            "from", "damn", "fucking", "bloody", "stupid", "goddamn", "freaking",
+            "cursed", "blasted", "that", "this", "some", "any", "my", "your",
+            "his", "her", "its", "our", "their"
+    ));
+
+    // Important prepositions that should be preserved for command structure
+    private static final Set<String> IMPORTANT_PREPOSITIONS = new HashSet<>(Arrays.asList(
+            "on", "in", "into", "onto", "upon", "against", "over", "under",
+            "behind", "beside", "near", "inside", "outside", "through", "across"
     ));
 
     public CommandParser(Game game) {
@@ -201,7 +221,7 @@ public class CommandParser {
         }
 
         String[] originalArgs = argsList.toArray(new String[0]);
-        String[] filteredArgs = filterArguments(originalArgs);
+        String[] filteredArgs = extractMeaningfulWords(originalArgs, commandName);
 
         return new ParsedCommand(commandName, originalArgs, filteredArgs);
     }
@@ -212,7 +232,7 @@ public class CommandParser {
             String lowerWord = word.toLowerCase();
             if (DIRECTION_WORDS.contains(lowerWord)) {
                 // This is likely a movement command
-                String[] filteredArgs = filterArguments(words);
+                String[] filteredArgs = extractMeaningfulWords(words, "go");
                 return new ParsedCommand("go", words, filteredArgs);
             }
         }
@@ -241,7 +261,7 @@ public class CommandParser {
         }
 
         // Check for implied actions with objects
-        if (containsAnyOf(sentence, "potion", "coin", "compass", "sword", "bullet")) {
+        if (containsAnyGameObject(sentence)) {
             if (containsAnyOf(sentence, "drink", "consume", "swallow")) {
                 return extractObjectCommand("use", words);
             }
@@ -251,6 +271,15 @@ public class CommandParser {
         }
 
         return null;
+    }
+
+    private boolean containsAnyGameObject(String sentence) {
+        for (String object : GAME_OBJECTS) {
+            if (sentence.contains(object)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean containsAnyOf(String sentence, String... keywords) {
@@ -263,47 +292,33 @@ public class CommandParser {
     }
 
     private ParsedCommand extractObjectCommand(String command, String[] words) {
-        // Find the object being referenced
-        List<String> objectWords = new ArrayList<>();
-        for (String word : words) {
-            String lowerWord = word.toLowerCase();
-            if (!isFillerWord(lowerWord) && !isActionWord(lowerWord)) {
-                objectWords.add(word);
-            }
-        }
-
-        String[] originalArgs = objectWords.toArray(new String[0]);
-        String[] filteredArgs = filterArguments(originalArgs);
+        String[] originalArgs = words;
+        String[] filteredArgs = extractMeaningfulWords(originalArgs, command);
         return new ParsedCommand(command, originalArgs, filteredArgs);
     }
 
-    private boolean isActionWord(String word) {
-        return word.equals("drink") || word.equals("consume") || word.equals("swallow") ||
-                word.equals("details") || word.equals("closer") || word.equals("closely") ||
-                word.equals("what") || word.equals("where") || word.equals("how") ||
-                word.equals("have") || word.equals("carrying") || word.equals("am") ||
-                word.equals("health") || word.equals("sell") || word.equals("buy") ||
-                word.equals("available");
-    }
+    private String[] extractMeaningfulWords(String[] words, String commandName) {
+        List<String> meaningfulWords = new ArrayList<>();
+        int maxArgs = getMaxArgsForCommand(commandName);
 
-    private String[] filterArguments(String[] args) {
-        List<String> filteredWords = new ArrayList<>();
-
-        for (String word : args) {
-            String lowerWord = word.toLowerCase();
-            if (!isFillerWord(lowerWord)) {
-                filteredWords.add(lowerWord);
+        for (String word : words) {
+            // Stop if we've reached the maximum number of arguments
+            if (meaningfulWords.size() >= maxArgs) {
+                break;
             }
+
+            String lowerWord = word.toLowerCase();
+
+            // Skip common filler words, but preserve important prepositions
+            if (FILLER_WORDS.contains(lowerWord) && !IMPORTANT_PREPOSITIONS.contains(lowerWord)) {
+                continue;
+            }
+
+            // Keep everything else - it might be a game object or meaningful argument
+            meaningfulWords.add(lowerWord);
         }
 
-        return filteredWords.toArray(new String[0]);
-    }
-
-    private boolean isFillerWord(String word) {
-        return FILLER_WORDS.contains(word) ||
-                word.equals("damn") || word.equals("fucking") || word.equals("bloody") ||
-                word.equals("stupid") || word.equals("goddamn") || word.equals("freaking") ||
-                word.equals("cursed") || word.equals("blasted");
+        return meaningfulWords.toArray(new String[0]);
     }
 
     private void executeCommand(String commandName, String[] originalArgs, String[] filteredArgs) {
@@ -330,6 +345,33 @@ public class CommandParser {
 
     public void addCommand(String name, Command command) {
         registerCommand(name, command);
+    }
+
+    private int getMaxArgsForCommand(String commandName) {
+        switch (commandName.toLowerCase()) {
+            case "use":
+                return 3; // "use item on target" = 3 args
+            case "take":
+            case "get":
+            case "grab":
+                return 1; // "take item" = 1 arg
+            case "examine":
+            case "inspect":
+                return 1; // "examine item" = 1 arg
+            case "go":
+            case "move":
+                return 1; // "go direction" = 1 arg
+            case "buy":
+            case "sell":
+                return 2; // "buy item" or "sell item amount" = 1-2 args
+            case "help":
+            case "stats":
+            case "inventory":
+            case "look":
+                return 0; // No arguments needed
+            default:
+                return 3; // Default fallback
+        }
     }
 
     // Helper class to store parsed command information
