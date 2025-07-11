@@ -17,23 +17,26 @@ public class UseCommand implements Command {
         }
 
         // Check if this is a "use X on Y" command
-        boolean hasOnKeyword = false;
-        int onIndex = -1;
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equalsIgnoreCase("on")) {
-                hasOnKeyword = true;
-                onIndex = i;
-                break;
-            }
-        }
-
-        if (hasOnKeyword) {
-            // Delegate to UseOnCommand logic
+        int onIndex = findOnKeyword(args);
+        if (onIndex != -1) {
             executeUseOn(game, args, onIndex);
             return;
         }
 
         // Regular use command logic
+        executeRegularUse(game, args);
+    }
+
+    private int findOnKeyword(String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equalsIgnoreCase("on")) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void executeRegularUse(Game game, String[] args) {
         Player player = game.getPlayer();
         String itemName = String.join(" ", args);
 
@@ -74,47 +77,47 @@ public class UseCommand implements Command {
             return;
         }
 
-        // Build item name from args before "on"
-        StringBuilder itemNameBuilder = new StringBuilder();
-        for (int i = 0; i < onIndex; i++) {
-            if (i > 0) itemNameBuilder.append(" ");
-            itemNameBuilder.append(args[i]);
-        }
-        String itemName = itemNameBuilder.toString();
-
-        // Build target name from args after "on"
-        StringBuilder targetNameBuilder = new StringBuilder();
-        for (int i = onIndex + 1; i < args.length; i++) {
-            if (i > onIndex + 1) targetNameBuilder.append(" ");
-            targetNameBuilder.append(args[i]);
-        }
-        String targetName = targetNameBuilder.toString();
+        String itemName = buildStringFromArgs(args, 0, onIndex);
+        String targetName = buildStringFromArgs(args, onIndex + 1, args.length);
 
         Player player = game.getPlayer();
-
-        // Find the item in player's inventory
         Item item = player.findItem(itemName);
+
         if (item == null) {
             game.getGui().displayMessage("You don't have an item called '" + itemName + "'.");
             return;
         }
 
         // Handle specific puzzle interactions
-        if (item instanceof OldCoin && (targetName.equalsIgnoreCase("counter") || targetName.equalsIgnoreCase("wooden counter"))) {
+        if (item instanceof OldCoin && isCounterTarget(targetName)) {
             handleCoinOnCounter(game, player, item);
         } else {
             game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
         }
     }
 
+    private String buildStringFromArgs(String[] args, int start, int end) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = start; i < end; i++) {
+            if (i > start) builder.append(" ");
+            builder.append(args[i]);
+        }
+        return builder.toString();
+    }
+
+    private boolean isCounterTarget(String targetName) {
+        return targetName.equalsIgnoreCase("counter") ||
+                targetName.equalsIgnoreCase("wooden counter") ||
+                targetName.equalsIgnoreCase("indentation") ||
+                targetName.equalsIgnoreCase("indent");
+    }
+
     private void handleCoinOnCounter(Game game, Player player, Item coin) {
-        // Check if player is in the shop
         if (!game.getCurrentRoom().getName().equals("Item Shop")) {
             game.getGui().displayMessage("There's no suitable counter here.");
             return;
         }
 
-        // Check if display case is already opened
         if (game.getStoryFlags().hasFlag("opened_display_case")) {
             game.getGui().displayMessage("The display case is already open.");
             return;
@@ -124,16 +127,12 @@ public class UseCommand implements Command {
         game.getGui().displayMessage("You place the old coin into the circular indentation on the counter.");
         game.getGui().displayMessage("The coin fits perfectly, and you hear a soft *click*.");
         game.getGui().displayMessage("The glass display case opens silently, revealing its contents.");
-        game.getGui().displayMessage("A silver compass that ticks mysteriously is now accessible.");
+        game.getGui().displayMessage("A magnificent golden revolver with gleaming silver bullets is now accessible.");
 
-        // Remove the coin (it's consumed in the puzzle)
+        // Remove the coin and set story flag
         player.removeItem(coin);
-
-        // Set the story flag
         game.getStoryFlags().addFlag("opened_display_case");
-
-        // Add the compass to the room so it can be taken
-        game.getCurrentRoom().addItem(new rpg.items.SilverCompass());
+        game.getCurrentRoom().addItem(new rpg.items.GoldenRevolver());
     }
 
     @Override
@@ -143,6 +142,6 @@ public class UseCommand implements Command {
 
     @Override
     public String[] getAliases() {
-        return new String[]{"u", "consume", "drink", "eat"};
+        return new String[]{"u", "consume", "drink", "eat", "place", "insert", "put"};
     }
 }

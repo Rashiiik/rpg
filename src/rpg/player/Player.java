@@ -1,11 +1,14 @@
 package rpg.player;
 
+import rpg.core.Game;
+
 public class Player {
     private String name;
     private int hp;
     private int maxHp;
     private int gold;
     private Inventory inventory;
+    private Game game;
 
     public Player(String name) {
         this.name = name;
@@ -22,12 +25,20 @@ public class Player {
     public int getGold() { return gold; }
     public Inventory getInventory() { return inventory; }
 
+    public Game getGame() {
+        return game;
+    }
+
     // Setters
     public void setName(String name) { this.name = name; }
     public void setHp(int hp) { this.hp = Math.max(0, Math.min(hp, maxHp)); }
     public void setMaxHp(int maxHp) { this.maxHp = maxHp; }
     public void setGold(int gold) { this.gold = Math.max(0, gold); }
     public void setInventory(Inventory inventory) { this.inventory = inventory; }
+
+    public void setGame(Game game) {
+        this.game = game;
+    }
 
     // Utility methods
     public void heal(int amount) {
@@ -42,7 +53,7 @@ public class Player {
         setGold(gold + amount);
     }
 
-    public boolean spendGold(int amount) {
+    public boolean removeGold(int amount) {
         if (gold >= amount) {
             setGold(gold - amount);
             return true;

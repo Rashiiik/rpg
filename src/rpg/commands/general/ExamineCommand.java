@@ -4,15 +4,9 @@ import rpg.commands.Command;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.HashSet;
+import rpg.utils.ItemUtil;
 
 public class ExamineCommand implements Command {
-
-    private static final Set<String> ARTICLES = new HashSet<>(Arrays.asList(
-            "a", "an", "the"
-    ));
 
     @Override
     public void execute(Game game, String[] args) {
@@ -21,30 +15,28 @@ public class ExamineCommand implements Command {
             return;
         }
 
-        String target = filterAndJoinArgs(args);
-
+        String target = ItemUtil.filterAndJoinArgs(args);
         Player player = game.getPlayer();
-        Item item = findItemInInventory(player, target);
-        if (item != null) {
-            game.getGui().displayMessage("=== " + item.getName() + " ===");
-            game.getGui().displayMessage(item.getDescription());
-            game.getGui().displayMessage("Value: " + item.getValue() + " gold");
 
-            provideDetailedItemInfo(game, item, target);
+        // Check inventory first
+        Item item = ItemUtil.findItemInInventory(player, target);
+        if (item != null) {
+            displayItemDetails(game, item);
+            provideDetailedItemInfo(game, item);
             return;
         }
 
+        // Check for special shop examinations
         if (game.getCurrentRoom().getName().equals("Item Shop")) {
             if (handleDetailedShopExamination(game, target)) {
                 return;
             }
         }
 
+        // Check room items
         Item roomItem = game.getCurrentRoom().findItem(target);
         if (roomItem != null) {
-            game.getGui().displayMessage("=== " + roomItem.getName() + " ===");
-            game.getGui().displayMessage(roomItem.getDescription());
-            game.getGui().displayMessage("Value: " + roomItem.getValue() + " gold");
+            displayItemDetails(game, roomItem);
             return;
         }
 
@@ -52,7 +44,13 @@ public class ExamineCommand implements Command {
         game.getGui().displayMessage("You look closely but don't find anything called '" + target + "' to examine.");
     }
 
-    private void provideDetailedItemInfo(Game game, Item item, String target) {
+    private void displayItemDetails(Game game, Item item) {
+        game.getGui().displayMessage("=== " + item.getName() + " ===");
+        game.getGui().displayMessage(item.getDescription());
+        game.getGui().displayMessage("Value: " + item.getValue() + " gold");
+    }
+
+    private void provideDetailedItemInfo(Game game, Item item) {
         String itemName = item.getName().toLowerCase();
 
         if (itemName.contains("coin")) {
@@ -70,94 +68,80 @@ public class ExamineCommand implements Command {
         }
     }
 
-    private String filterAndJoinArgs(String[] args) {
-        StringBuilder result = new StringBuilder();
-
-        for (String arg : args) {
-            String lowerArg = arg.toLowerCase();
-            if (!ARTICLES.contains(lowerArg)) {
-                if (result.length() > 0) {
-                    result.append(" ");
-                }
-                result.append(lowerArg);
-            }
-        }
-
-        return result.toString();
-    }
-
-    private Item findItemInInventory(Player player, String target) {
-        Item item = player.findItem(target);
-        if (item != null) {
-            return item;
-        }
-
-        for (Item inventoryItem : player.getInventory().getItems()) {
-            if (inventoryItem.matchesSearch(target)) {
-                return inventoryItem;
-            }
-        }
-
-        return null;
-    }
-
     private boolean handleDetailedShopExamination(Game game, String target) {
         if (target.contains("counter") || target.contains("indentation") || target.contains("indent")) {
-            if (game.getStoryFlags().hasFlag("opened_display_case")) {
-                game.getGui().displayMessage("You run your fingers along the counter's surface.");
-                game.getGui().displayMessage("The circular indentation is perfectly smooth, as if the coin melted into it.");
-                game.getGui().displayMessage("You notice faint magical residue around the edges.");
-            } else {
-                game.getGui().displayMessage("You examine the counter closely.");
-                game.getGui().displayMessage("The circular indentation is precisely carved - definitely not natural wear.");
-                game.getGui().displayMessage("Running your finger around its edge, you feel a faint magical tingle.");
-                game.getGui().displayMessage("This was made to hold something specific...");
-            }
+            examineCounter(game);
             return true;
         }
 
         if (target.contains("display") || target.contains("case") || target.contains("glass")) {
-            if (game.getStoryFlags().hasFlag("opened_display_case")) {
-                game.getGui().displayMessage("The display case's glass is crystal clear, without a single fingerprint.");
-                game.getGui().displayMessage("The opening mechanism is completely hidden - no hinges or locks visible.");
-                game.getGui().displayMessage("Whatever magic opened this, it's beyond your understanding.");
-            } else {
-                game.getGui().displayMessage("You press your face close to the glass.");
-                game.getGui().displayMessage("Inside, you can make out the shape of a magical compass.");
-                game.getGui().displayMessage("The glass itself seems to shimmer with protective enchantments.");
-                game.getGui().displayMessage("No amount of force would break this - it needs to be opened properly.");
-            }
+            examineDisplayCase(game);
             return true;
         }
 
-        // Shopkeeper - detailed examination reveals more personality
         if (target.contains("shopkeeper") || target.contains("keeper") || target.contains("merchant")) {
-            game.getGui().displayMessage("You study the shopkeeper carefully.");
-            game.getGui().displayMessage("Their eyes hold ancient wisdom, far older than their appearance suggests.");
-            game.getGui().displayMessage("Small scars on their hands tell of a life beyond shopkeeping.");
-            game.getGui().displayMessage("When they think you're not looking, they glance meaningfully at the display case.");
+            examineShopkeeper(game);
             return true;
         }
 
-        // Shelves - detailed examination reveals organization
         if (target.contains("shelf") || target.contains("shelves")) {
-            game.getGui().displayMessage("You examine the shelves more closely.");
-            game.getGui().displayMessage("Everything is organized by more than just type - there's a pattern here.");
-            game.getGui().displayMessage("Magical items are subtly separated from mundane ones.");
-            game.getGui().displayMessage("Some items seem to be placed deliberately to hide others behind them.");
+            examineShelves(game);
             return true;
         }
 
-        // Windows - new detailed examination option
         if (target.contains("window") || target.contains("windows")) {
-            game.getGui().displayMessage("You peer through the grimy windows.");
-            game.getGui().displayMessage("The dirt seems intentionally placed to obscure the view.");
-            game.getGui().displayMessage("You can just make out shadowy figures moving in the street outside.");
-            game.getGui().displayMessage("This shop exists in a place between worlds...");
+            examineWindows(game);
             return true;
         }
 
         return false;
+    }
+
+    private void examineCounter(Game game) {
+        if (game.getStoryFlags().hasFlag("opened_display_case")) {
+            game.getGui().displayMessage("You run your fingers along the counter's surface.");
+            game.getGui().displayMessage("The circular indentation is perfectly smooth, as if the coin melted into it.");
+            game.getGui().displayMessage("You notice faint magical residue around the edges.");
+        } else {
+            game.getGui().displayMessage("You examine the counter closely.");
+            game.getGui().displayMessage("The circular indentation is precisely carved - definitely not natural wear.");
+            game.getGui().displayMessage("Running your finger around its edge, you feel a faint magical tingle.");
+            game.getGui().displayMessage("This was made to hold something specific...");
+        }
+    }
+
+    private void examineDisplayCase(Game game) {
+        if (game.getStoryFlags().hasFlag("opened_display_case")) {
+            game.getGui().displayMessage("The display case's glass is crystal clear, without a single fingerprint.");
+            game.getGui().displayMessage("The opening mechanism is completely hidden - no hinges or locks visible.");
+            game.getGui().displayMessage("Whatever magic opened this, it's beyond your understanding.");
+        } else {
+            game.getGui().displayMessage("You press your face close to the glass.");
+            game.getGui().displayMessage("Inside, you can make out the shape of a magical compass.");
+            game.getGui().displayMessage("The glass itself seems to shimmer with protective enchantments.");
+            game.getGui().displayMessage("No amount of force would break this - it needs to be opened properly.");
+        }
+    }
+
+    private void examineShopkeeper(Game game) {
+        game.getGui().displayMessage("You study the shopkeeper carefully.");
+        game.getGui().displayMessage("Their eyes hold ancient wisdom, far older than their appearance suggests.");
+        game.getGui().displayMessage("Small scars on their hands tell of a life beyond shopkeeping.");
+        game.getGui().displayMessage("When they think you're not looking, they glance meaningfully at the display case.");
+    }
+
+    private void examineShelves(Game game) {
+        game.getGui().displayMessage("You examine the shelves more closely.");
+        game.getGui().displayMessage("Everything is organized by more than just type - there's a pattern here.");
+        game.getGui().displayMessage("Magical items are subtly separated from mundane ones.");
+        game.getGui().displayMessage("Some items seem to be placed deliberately to hide others behind them.");
+    }
+
+    private void examineWindows(Game game) {
+        game.getGui().displayMessage("You peer through the grimy windows.");
+        game.getGui().displayMessage("The dirt seems intentionally placed to obscure the view.");
+        game.getGui().displayMessage("You can just make out shadowy figures moving in the street outside.");
+        game.getGui().displayMessage("This shop exists in a place between worlds...");
     }
 
     @Override
