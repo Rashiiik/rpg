@@ -9,7 +9,6 @@ public class Shop extends Room {
     public Shop() {
         super("Item Shop", "Tucked away in a fog-drenched alley of the Backlund docks—where gas lamps flicker and shadows stretch with minds of their own—stands a narrow, leaning storefront with windows dulled by age and secrets.");
 
-        // Add an old coin somewhere in the shop initially
         addItem(new OldCoin());
     }
 
@@ -20,7 +19,6 @@ public class Shop extends Room {
         game.getGui().displayMessage("A friendly shopkeeper greets you with a warm smile.");
         game.getGui().displayMessage("'Welcome to my shop! Feel free to browse my wares.'");
 
-        // Add puzzle hint on first visit
         if (!game.getStoryFlags().hasFlag("shop_visited")) {
             game.getGui().displayMessage("You notice a peculiar display case behind the counter, gleaming despite the shop's dusty atmosphere.");
             game.getStoryFlags().addFlag("shop_visited");

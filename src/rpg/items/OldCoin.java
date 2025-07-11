@@ -6,10 +6,10 @@ public class OldCoin extends Item {
 
     public OldCoin() {
         super("Old Coin",
-                "An ancient coin with strange markings. It feels warm to the touch.",
+                "An ancient coin with strange markings.",
                 5,
                 false,
-                new String[]{"coin", "old", "ancient coin"}); // Keywords for searching
+                new String[]{"coin", "old", "ancient coin"});
     }
 
     @Override

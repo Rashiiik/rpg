@@ -124,7 +124,6 @@ public class CommandParser {
             return;
         }
 
-        // Fall back to traditional parsing
         String[] parts = input.trim().toLowerCase().split("\\s+");
         String commandName = parts[0];
         String[] args = Arrays.copyOfRange(parts, 1, parts.length);
@@ -134,7 +133,6 @@ public class CommandParser {
     private ParsedCommand parseNaturalLanguage(String input) {
         String[] words = input.trim().toLowerCase().split("\\s+");
 
-        // Find the main verb
         String verb = null;
         int verbIndex = -1;
 
@@ -148,42 +146,34 @@ public class CommandParser {
         }
 
         if (verb == null) {
-            return null; // No recognized verb found
+            return null;
         }
 
-        // Extract meaningful words after the verb
         List<String> meaningfulWords = new ArrayList<>();
         boolean foundOn = false;
 
         for (int i = verbIndex + 1; i < words.length; i++) {
             String word = words[i];
 
-            // Skip filler words
             if (FILLER_WORDS.contains(word)) {
                 continue;
             }
 
-            // Keep "on" for use-on commands
             if (word.equals("on")) {
                 foundOn = true;
                 meaningfulWords.add(word);
                 continue;
             }
 
-            // For "go" command, skip "to" preposition but keep other words
             if (verb.equals("go") && word.equals("to")) {
                 continue;
             }
 
-            // Skip other prepositions except "on"
             if (PREPOSITIONS.contains(word) && !word.equals("on")) {
                 continue;
             }
 
-            // Skip articles unless they're part of location names or important context
             if (ARTICLES.contains(word)) {
-                // For most cases, just skip articles entirely
-                // This is simpler and more reliable than trying to determine importance
                 continue;
             }
 
@@ -206,7 +196,6 @@ public class CommandParser {
     }
 
     private boolean isImportantNoun(String word) {
-        // Common location and item words that should keep their articles
         Set<String> importantNouns = new HashSet<>(Arrays.asList(
                 "shop", "counter", "coin", "compass", "door", "chest", "table",
                 "room", "cave", "forest", "house", "store", "market", "inn",
@@ -229,7 +218,6 @@ public class CommandParser {
         directionMap.put("southeast", "southeast");
         directionMap.put("southwest", "southwest");
 
-        // Common location names that should be treated as destinations
         Set<String> locationNames = new HashSet<>(Arrays.asList(
                 "shop", "store", "market", "inn", "tavern", "house", "home", "cave",
                 "forest", "town", "city", "village", "room", "chamber", "hall"
@@ -237,14 +225,12 @@ public class CommandParser {
 
         List<String> result = new ArrayList<>();
 
-        // First check for traditional directions
         for (String word : words) {
             if (directionMap.containsKey(word)) {
                 result.add(directionMap.get(word));
             }
         }
 
-        // If no directions found, check for location names
         if (result.isEmpty()) {
             for (String word : words) {
                 if (locationNames.contains(word)) {
@@ -253,12 +239,10 @@ public class CommandParser {
             }
         }
 
-        // If still no matches, return the original words
         return result.isEmpty() ? words : result;
     }
 
     private void executeCommand(String commandName, String[] args) {
-        // Special handling for "use X on Y" syntax
         if (commandName.equals("use") && containsOnKeyword(args)) {
             Command useOnCommand = commands.get("useon");
             if (useOnCommand != null) {
@@ -295,7 +279,6 @@ public class CommandParser {
     }
 
     private void suggestSimilarCommands(String input) {
-        // Simple suggestion system
         List<String> suggestions = new ArrayList<>();
 
         for (String verb : VERB_SYNONYMS.keySet()) {
@@ -317,7 +300,6 @@ public class CommandParser {
         registerCommand(name, command);
     }
 
-    // Helper class to hold parsed command data
     private static class ParsedCommand {
         public final String verb;
         public final String[] arguments;
