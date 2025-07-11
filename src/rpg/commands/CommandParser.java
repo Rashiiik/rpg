@@ -1,5 +1,8 @@
 package rpg.commands;
 
+import rpg.commands.general.ExamineCommand;
+import rpg.commands.items.TakeCommand;
+import rpg.commands.items.UseOnCommand;
 import rpg.core.Game;
 import rpg.commands.general.HelpCommand;
 import rpg.commands.general.StatsCommand;
@@ -29,6 +32,9 @@ public class CommandParser {
         registerCommand("go", new GoCommand());
         registerCommand("inventory", new InventoryCommand());
         registerCommand("use", new UseCommand());
+        registerCommand("take", new TakeCommand()); // ADD THIS
+        registerCommand("examine", new ExamineCommand()); // ADD THIS
+        registerCommand("useon", new UseOnCommand()); // ADD THIS
 
         // Add more commands as you implement them
         // registerCommand("take", new TakeCommand());

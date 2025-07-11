@@ -18,7 +18,7 @@ public class GameGUI extends JFrame {
     }
 
     private void initializeGUI() {
-        setTitle("Paradox Protocol");
+        setTitle("Touch Grass");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
         setLocationRelativeTo(null);

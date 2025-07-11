@@ -12,12 +12,14 @@ public class Game {
     private GameGUI gui;
     private CommandParser commandParser;
     private RoomManager roomManager;
+    private StoryFlags storyFlags;
     private boolean isRunning;
 
     public Game() {
         this.player = new Player("Vestappen");
         this.roomManager = new RoomManager();
         this.currentRoom = roomManager.getStartingRoom();
+        this.storyFlags = new StoryFlags();
         this.isRunning = false;
     }
 
@@ -58,6 +60,9 @@ public class Game {
     public Player getPlayer() { return player; }
     public Room getCurrentRoom() { return currentRoom; }
     public GameGUI getGui() { return gui; }
+    public StoryFlags getStoryFlags() {
+        return storyFlags;
+    }
     public CommandParser getCommandParser() { return commandParser; }
     public RoomManager getRoomManager() { return roomManager; }
     public boolean isRunning() { return isRunning; }
