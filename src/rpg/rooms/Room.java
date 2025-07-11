@@ -38,11 +38,32 @@ public abstract class Room {
     }
 
     public Item findItem(String itemName) {
+        if (itemName == null || itemName.trim().isEmpty()) {
+            return null;
+        }
+
+        String searchTerm = itemName.toLowerCase().trim();
+
+        // First pass: try exact name match
         for (Item item : items) {
-            if (item.getName().equalsIgnoreCase(itemName)) {
+            if (item.getName().toLowerCase().equals(searchTerm)) {
                 return item;
             }
         }
+
+        // Second pass: try partial matching - check if any word in the item name matches
+        for (Item item : items) {
+            String itemNameLower = item.getName().toLowerCase();
+
+            // Check if search term matches any word in the item name
+            String[] words = itemNameLower.split("\\s+");
+            for (String word : words) {
+                if (word.equals(searchTerm)) {
+                    return item;
+                }
+            }
+        }
+
         return null;
     }
 

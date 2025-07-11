@@ -5,7 +5,11 @@ import rpg.player.Player;
 public class OldCoin extends Item {
 
     public OldCoin() {
-        super("Old Coin", "An ancient coin with strange markings. It feels warm to the touch.", 5, false);
+        super("Old Coin",
+                "An ancient coin with strange markings. It feels warm to the touch.",
+                5,
+                false,
+                new String[]{"coin", "old", "ancient coin"}); // Keywords for searching
     }
 
     @Override
