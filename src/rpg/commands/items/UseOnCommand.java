@@ -10,14 +10,54 @@ public class UseOnCommand implements Command {
 
     @Override
     public void execute(Game game, String[] args) {
-        if (args.length < 3 || !args[1].equalsIgnoreCase("on")) {
+        if (args.length < 3) {
             game.getGui().displayMessage("Usage: use <item> on <target>");
+            game.getGui().displayMessage("Example: use coin on counter");
             return;
         }
 
+        // Find the "on" keyword to split item name and target
+        int onIndex = -1;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equalsIgnoreCase("on")) {
+                onIndex = i;
+                break;
+            }
+        }
+
+        if (onIndex == -1) {
+            game.getGui().displayMessage("Usage: use <item> on <target>");
+            game.getGui().displayMessage("You need to specify what to use the item 'on'.");
+            return;
+        }
+
+        if (onIndex == 0) {
+            game.getGui().displayMessage("You need to specify an item to use.");
+            return;
+        }
+
+        if (onIndex == args.length - 1) {
+            game.getGui().displayMessage("You need to specify a target after 'on'.");
+            return;
+        }
+
+        // Build item name from args before "on"
+        StringBuilder itemNameBuilder = new StringBuilder();
+        for (int i = 0; i < onIndex; i++) {
+            if (i > 0) itemNameBuilder.append(" ");
+            itemNameBuilder.append(args[i]);
+        }
+        String itemName = itemNameBuilder.toString();
+
+        // Build target name from args after "on"
+        StringBuilder targetNameBuilder = new StringBuilder();
+        for (int i = onIndex + 1; i < args.length; i++) {
+            if (i > onIndex + 1) targetNameBuilder.append(" ");
+            targetNameBuilder.append(args[i]);
+        }
+        String targetName = targetNameBuilder.toString();
+
         Player player = game.getPlayer();
-        String itemName = args[0];
-        String targetName = args[2];
 
         // Find the item in player's inventory
         Item item = player.findItem(itemName);
@@ -27,7 +67,7 @@ public class UseOnCommand implements Command {
         }
 
         // Handle specific puzzle interactions
-        if (item instanceof OldCoin && targetName.equalsIgnoreCase("counter")) {
+        if (item instanceof OldCoin && (targetName.equalsIgnoreCase("counter") || targetName.equalsIgnoreCase("wooden counter"))) {
             handleCoinOnCounter(game, player, item);
         } else {
             game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
