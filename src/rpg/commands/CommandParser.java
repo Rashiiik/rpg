@@ -23,7 +23,6 @@ public class CommandParser {
     private Map<String, Command> commands;
     private Game game;
 
-    // All possible command words (including aliases) mapped to their primary command
     private static final Map<String, String> ALL_COMMAND_WORDS = new HashMap<>();
     static {
         // Take command variants
@@ -90,7 +89,6 @@ public class CommandParser {
         ALL_COMMAND_WORDS.put("exchange", "sell");
     }
 
-    // Words that indicate direction/movement without explicit "go"
     private static final Set<String> DIRECTION_WORDS = new HashSet<>(Arrays.asList(
             "north", "south", "east", "west", "up", "down", "in", "out",
             "back", "forward", "left", "right", "shop", "store", "market",
@@ -98,7 +96,6 @@ public class CommandParser {
             "city", "village", "exit", "entrance", "door", "gate"
     ));
 
-    // Known game objects/items that are meaningful as arguments
     private static final Set<String> GAME_OBJECTS = new HashSet<>(Arrays.asList(
             "potion", "coin", "coins", "compass", "sword", "bullet", "bullets",
             "key", "keys", "gem", "gems", "ring", "rings", "shield", "armor",
@@ -110,16 +107,6 @@ public class CommandParser {
             "bed", "barrel", "crate", "box", "lever", "button", "switch"
     ));
 
-    // Common filler words that should be ignored
-    private static final Set<String> FILLER_WORDS = new HashSet<>(Arrays.asList(
-            "a", "an", "the", "i", "want", "would", "like", "please", "can",
-            "could", "should", "will", "shall", "to", "at", "by", "for", "with",
-            "from", "damn", "fucking", "bloody", "stupid", "goddamn", "freaking",
-            "cursed", "blasted", "that", "this", "some", "any", "my", "your",
-            "his", "her", "its", "our", "their"
-    ));
-
-    // Important prepositions that should be preserved for command structure
     private static final Set<String> IMPORTANT_PREPOSITIONS = new HashSet<>(Arrays.asList(
             "on", "in", "into", "onto", "upon", "against", "over", "under",
             "behind", "beside", "near", "inside", "outside", "through", "across"
@@ -163,13 +150,11 @@ public class CommandParser {
             return;
         }
 
-        // Special case: if the only word is "I", open inventory
         if (words.length == 1 && words[0].equalsIgnoreCase("I")) {
             executeCommand("inventory", new String[0], new String[0]);
             return;
         }
 
-        // Find the command in the sentence
         ParsedCommand parsedCommand = findCommandInSentence(words);
 
         if (parsedCommand == null) {
@@ -182,7 +167,6 @@ public class CommandParser {
     }
 
     private ParsedCommand findCommandInSentence(String[] words) {
-        // Strategy 1: Look for explicit command words in the sentence
         for (int i = 0; i < words.length; i++) {
             String word = words[i].toLowerCase();
             if (ALL_COMMAND_WORDS.containsKey(word)) {
@@ -190,19 +174,16 @@ public class CommandParser {
             }
         }
 
-        // Strategy 2: Check for implicit movement commands
         ParsedCommand movementCommand = checkForImplicitMovement(words);
         if (movementCommand != null) {
             return movementCommand;
         }
 
-        // Strategy 3: Check for context-based commands
         ParsedCommand contextCommand = checkForContextualCommands(words);
         if (contextCommand != null) {
             return contextCommand;
         }
 
-        // Strategy 4: Fallback to first word if it's a valid command
         String firstWord = words[0].toLowerCase();
         if (ALL_COMMAND_WORDS.containsKey(firstWord)) {
             return createParsedCommand(ALL_COMMAND_WORDS.get(firstWord), words, 0);
@@ -212,7 +193,6 @@ public class CommandParser {
     }
 
     private ParsedCommand createParsedCommand(String commandName, String[] words, int commandIndex) {
-        // Create arguments by excluding the command word
         List<String> argsList = new ArrayList<>();
         for (int i = 0; i < words.length; i++) {
             if (i != commandIndex) {
@@ -227,7 +207,6 @@ public class CommandParser {
     }
 
     private ParsedCommand checkForImplicitMovement(String[] words) {
-        // Check if any word is a direction without explicit "go"
         for (String word : words) {
             String lowerWord = word.toLowerCase();
             if (DIRECTION_WORDS.contains(lowerWord)) {
@@ -242,7 +221,6 @@ public class CommandParser {
     private ParsedCommand checkForContextualCommands(String[] words) {
         String sentence = String.join(" ", words).toLowerCase();
 
-        // Check for common patterns
         if (sentence.contains("what") && (sentence.contains("have") || sentence.contains("carrying"))) {
             return new ParsedCommand("inventory", new String[0], new String[0]);
         }
@@ -255,12 +233,10 @@ public class CommandParser {
             return new ParsedCommand("stats", new String[0], new String[0]);
         }
 
-        // Check for shop-related patterns
         if (sentence.contains("what") && (sentence.contains("sell") || sentence.contains("buy") || sentence.contains("available"))) {
             return new ParsedCommand("buy", new String[0], new String[0]);
         }
 
-        // Check for implied actions with objects
         if (containsAnyGameObject(sentence)) {
             if (containsAnyOf(sentence, "drink", "consume", "swallow")) {
                 return extractObjectCommand("use", words);
@@ -302,20 +278,26 @@ public class CommandParser {
         int maxArgs = getMaxArgsForCommand(commandName);
 
         for (String word : words) {
-            // Stop if we've reached the maximum number of arguments
             if (meaningfulWords.size() >= maxArgs) {
                 break;
             }
 
             String lowerWord = word.toLowerCase();
 
-            // Skip common filler words, but preserve important prepositions
-            if (FILLER_WORDS.contains(lowerWord) && !IMPORTANT_PREPOSITIONS.contains(lowerWord)) {
-                continue;
+            boolean isNumber = false;
+            try {
+                Integer.parseInt(word);
+                isNumber = true;
+            } catch (NumberFormatException e) {
+                // go on
             }
 
-            // Keep everything else - it might be a game object or meaningful argument
-            meaningfulWords.add(lowerWord);
+            if (GAME_OBJECTS.contains(lowerWord) ||
+                    DIRECTION_WORDS.contains(lowerWord) ||
+                    IMPORTANT_PREPOSITIONS.contains(lowerWord) ||
+                    isNumber) {
+                meaningfulWords.add(lowerWord);
+            }
         }
 
         return meaningfulWords.toArray(new String[0]);
@@ -350,31 +332,30 @@ public class CommandParser {
     private int getMaxArgsForCommand(String commandName) {
         switch (commandName.toLowerCase()) {
             case "use":
-                return 3; // "use item on target" = 3 args
+                return 3;
             case "take":
             case "get":
             case "grab":
-                return 1; // "take item" = 1 arg
+                return 1;
             case "examine":
             case "inspect":
-                return 1; // "examine item" = 1 arg
+                return 1;
             case "go":
             case "move":
-                return 1; // "go direction" = 1 arg
+                return 1;
             case "buy":
             case "sell":
-                return 2; // "buy item" or "sell item amount" = 1-2 args
+                return 2;
             case "help":
             case "stats":
             case "inventory":
             case "look":
-                return 0; // No arguments needed
+                return 0;
             default:
-                return 3; // Default fallback
+                return 3;
         }
     }
 
-    // Helper class to store parsed command information
     private static class ParsedCommand {
         final String commandName;
         final String[] originalArgs;
@@ -387,7 +368,6 @@ public class CommandParser {
         }
     }
 
-    // Interface for commands that want to handle both original and filtered arguments
     public interface EnhancedCommand extends Command {
         void execute(Game game, String[] originalArgs, String[] filteredArgs);
     }
