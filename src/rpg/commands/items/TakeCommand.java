@@ -5,13 +5,13 @@ import rpg.commands.CommandParser;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
-import rpg.utils.ItemUtil;
+import rpg.utils.ItemSearchEngine;
+import rpg.utils.StringUtils;
 
 public class TakeCommand implements Command, CommandParser.EnhancedCommand {
 
     @Override
     public void execute(Game game, String[] args) {
-        // Fallback for backward compatibility
         execute(game, args, args);
     }
 
@@ -24,22 +24,17 @@ public class TakeCommand implements Command, CommandParser.EnhancedCommand {
 
         Player player = game.getPlayer();
 
-        // Create search terms from both original and filtered arguments
-        String originalTarget = String.join(" ", originalArgs);
-        String filteredTarget = String.join(" ", filteredArgs);
+        // Create search terms
+        String originalTarget = StringUtils.buildStringFromArgs(originalArgs);
+        String filteredTarget = StringUtils.buildStringFromArgs(filteredArgs);
 
-        // Check if item is in the current room using progressive search
-        Item item = ItemUtil.findItemInRoom(game.getCurrentRoom(), originalTarget, filteredTarget);
-
-        if (item == null) {
-            // Try some additional search strategies
-            item = tryAlternativeSearch(game, originalTarget, filteredTarget);
-        }
+        // Use centralized search engine
+        Item item = ItemSearchEngine.findInRoomProgressive(
+                game.getCurrentRoom(), originalTarget, filteredTarget
+        );
 
         if (item == null) {
             game.getGui().displayMessage("There's no \"" + originalTarget + "\" here.");
-
-            // Provide helpful suggestions if possible
             suggestSimilarItems(game, originalTarget);
             return;
         }
@@ -54,45 +49,11 @@ public class TakeCommand implements Command, CommandParser.EnhancedCommand {
         game.getCurrentRoom().removeItem(item);
         player.addItem(item);
 
-        // Provide context-aware feedback
-        if (ItemUtil.containsEmphasisWords(originalTarget)) {
-            game.getGui().displayMessage("You grab the " + item.getName() + " with determination.");
-        } else {
-            game.getGui().displayMessage("You take the " + item.getName() + ".");
-        }
-    }
+        game.getGui().displayMessage("You take the " + item.getName() + ".");
 
-    private Item tryAlternativeSearch(Game game, String originalTarget, String filteredTarget) {
-        // Try removing emphasis words but keeping descriptive words
-        String cleanedTarget = ItemUtil.removeEmphasisWords(originalTarget);
-        if (!cleanedTarget.equals(originalTarget) && !cleanedTarget.isEmpty()) {
-            Item item = game.getCurrentRoom().findItem(cleanedTarget);
-            if (item != null) {
-                return item;
-            }
-        }
-
-        // Try individual words from the search term
-        String[] words = originalTarget.split("\\s+");
-        for (String word : words) {
-            if (word.length() > 2 && !ItemUtil.containsEmphasisWords(word)) {
-                Item item = game.getCurrentRoom().findItem(word);
-                if (item != null) {
-                    return item;
-                }
-            }
-        }
-
-        // Try the existing room's findItem method with filtered target
-        if (!filteredTarget.equals(originalTarget)) {
-            return game.getCurrentRoom().findItem(filteredTarget);
-        }
-
-        return null;
     }
 
     private void suggestSimilarItems(Game game, String searchTerm) {
-        // Get all items in the room
         var roomItems = game.getCurrentRoom().getItems();
 
         if (roomItems.isEmpty()) {

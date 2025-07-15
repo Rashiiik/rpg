@@ -7,7 +7,7 @@ import rpg.rooms.town.Shop;
 import rpg.shop.ShopItem;
 import rpg.shop.Transaction;
 import rpg.shop.TransactionType;
-import rpg.items.Item;
+import rpg.utils.StringUtils;
 
 public class BuyCommand implements Command, CommandParser.EnhancedCommand {
 
@@ -31,26 +31,20 @@ public class BuyCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        String itemName = String.join(" ", filteredArgs);
+        String itemName = StringUtils.buildStringFromArgs(filteredArgs);
         int quantity = 1;
 
         // Check if quantity is specified
         if (filteredArgs.length > 1) {
-            try {
-                // Try to parse the last word as a number
-                quantity = Integer.parseInt(filteredArgs[filteredArgs.length - 1]);
+            String lastArg = filteredArgs[filteredArgs.length - 1];
+            if (StringUtils.isNumber(lastArg)) {
+                quantity = Integer.parseInt(lastArg);
                 if (quantity <= 0) {
                     game.getGui().displayMessage("Invalid quantity. Please specify a positive number.");
                     return;
                 }
                 // Remove the quantity from the item name
-                String[] itemWords = new String[filteredArgs.length - 1];
-                System.arraycopy(filteredArgs, 0, itemWords, 0, itemWords.length);
-                itemName = String.join(" ", itemWords);
-            } catch (NumberFormatException e) {
-                // Last word is not a number, so treat it as part of the item name
-                quantity = 1;
-                itemName = String.join(" ", filteredArgs);
+                itemName = StringUtils.buildStringFromArgs(filteredArgs, 0, filteredArgs.length - 1);
             }
         }
 
@@ -100,6 +94,6 @@ public class BuyCommand implements Command, CommandParser.EnhancedCommand {
 
     @Override
     public String getHelpText() {
-        return "Buy items from the shop\nUsage: buy <item name> [quantity]\nAliases: purchase, get, acquire";
+        return "Buy items from the shop";
     }
 }

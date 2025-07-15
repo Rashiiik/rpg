@@ -7,6 +7,8 @@ import rpg.rooms.town.Shop;
 import rpg.shop.Transaction;
 import rpg.shop.TransactionType;
 import rpg.items.Item;
+import rpg.utils.ItemSearchEngine;
+import rpg.utils.StringUtils;
 
 public class SellCommand implements Command, CommandParser.EnhancedCommand {
 
@@ -24,66 +26,121 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
 
         Shop shop = (Shop) game.getCurrentRoom();
 
-        if (filteredArgs.length == 0) {
+        if (originalArgs.length == 0) {
             game.getGui().displayMessage("What would you like to sell?");
             game.getGui().displayMessage("Type 'inventory' to see what you have.");
             return;
         }
 
-        String itemName = String.join(" ", filteredArgs);
-        int quantity = 1;
+        // Use progressive matching strategy
+        ParsedSellArgs parsedArgs = parseSellArguments(originalArgs, filteredArgs);
 
-        // Check if quantity is specified
-        if (filteredArgs.length > 1) {
-            try {
-                quantity = Integer.parseInt(filteredArgs[filteredArgs.length - 1]);
-                if (quantity <= 0) {
-                    game.getGui().displayMessage("Invalid quantity. Please specify a positive number.");
-                    return;
-                }
-                String[] itemWords = new String[filteredArgs.length - 1];
-                System.arraycopy(filteredArgs, 0, itemWords, 0, itemWords.length);
-                itemName = String.join(" ", itemWords);
-            } catch (NumberFormatException e) {
-                quantity = 1;
-                itemName = String.join(" ", filteredArgs);
-            }
+        if (parsedArgs.itemName.isEmpty()) {
+            game.getGui().displayMessage("What would you like to sell?");
+            return;
         }
 
-        Item item = game.getPlayer().getInventory().findItem(itemName);
+        // Try multiple search strategies
+        Item item = findItemToSell(game, parsedArgs.itemName, originalArgs);
         if (item == null) {
-            game.getGui().displayMessage("You don't have '" + itemName + "'.");
+            game.getGui().displayMessage("You don't have '" + parsedArgs.itemName + "'.");
             return;
         }
 
         int playerItemCount = game.getPlayer().getInventory().getItemCount(item.getName());
-        if (playerItemCount < quantity) {
+        if (playerItemCount < parsedArgs.quantity) {
             game.getGui().displayMessage("You only have " + playerItemCount + " of '" + item.getName() + "'.");
             return;
         }
 
         int sellPrice = (int) (item.getValue() * 0.5); // Sell for half the original value
-        int totalValue = sellPrice * quantity;
+        int totalValue = sellPrice * parsedArgs.quantity;
 
         // Create and execute transaction with explicit price
-        Transaction transaction = new Transaction(TransactionType.SELL, item, quantity, totalValue, game.getPlayer());
+        Transaction transaction = new Transaction(TransactionType.SELL, item, parsedArgs.quantity, totalValue, game.getPlayer());
 
         if (transaction.execute()) {
             // Remove the sold items from player's inventory
-            if (quantity > 1) {
-                game.getPlayer().getInventory().removeItems(item.getName(), quantity);
+            if (parsedArgs.quantity > 1) {
+                game.getPlayer().getInventory().removeItems(item.getName(), parsedArgs.quantity);
             } else {
                 game.getPlayer().getInventory().removeItem(item);
             }
 
             // Add the sold items to the shop's inventory
-            shop.addToShopInventory(item, quantity);
+            shop.addToShopInventory(item, parsedArgs.quantity);
 
-            String itemText = quantity == 1 ? item.getName() : quantity + " " + item.getName() + "s";
+            String itemText = parsedArgs.quantity == 1 ? item.getName() : parsedArgs.quantity + " " + item.getName() + "s";
             game.getGui().displayMessage("You sold " + itemText + " for " + totalValue + " gold.");
             game.getGui().displayMessage("You now have " + game.getPlayer().getGold() + " gold.");
         } else {
             game.getGui().displayMessage("Transaction failed. Please try again.");
+        }
+    }
+
+    private ParsedSellArgs parseSellArguments(String[] originalArgs, String[] filteredArgs) {
+        String itemName = "";
+        int quantity = 1;
+
+        // Strategy 1: Look for quantity at the end
+        if (originalArgs.length > 0) {
+            String lastArg = originalArgs[originalArgs.length - 1];
+            if (StringUtils.isNumber(lastArg)) {
+                quantity = Integer.parseInt(lastArg);
+                if (quantity <= 0) {
+                    quantity = 1;
+                }
+                // Build item name from all args except the last one
+                itemName = StringUtils.buildStringFromArgs(originalArgs, 0, originalArgs.length - 1);
+            } else {
+                // No quantity specified, use all args for item name
+                itemName = StringUtils.buildStringFromArgs(originalArgs);
+            }
+        }
+
+        // Strategy 2: Also try with filtered args if original didn't work
+        if (itemName.trim().isEmpty() && filteredArgs.length > 0) {
+            itemName = StringUtils.buildStringFromArgs(filteredArgs);
+        }
+
+        return new ParsedSellArgs(itemName.trim(), quantity);
+    }
+
+    private Item findItemToSell(Game game, String itemName, String[] originalArgs) {
+        // Strategy 1: Try the constructed item name
+        String filteredItemName = ItemSearchEngine.filterSearchTerm(itemName);
+        Item item = ItemSearchEngine.findInInventoryProgressive(game.getPlayer(), itemName, filteredItemName);
+        if (item != null) return item;
+
+        // Strategy 2: Try each individual word from original args
+        for (String word : originalArgs) {
+            if (!StringUtils.isNumber(word)) {
+                item = ItemSearchEngine.findInInventory(game.getPlayer(), word);
+                if (item != null) return item;
+            }
+        }
+
+        // Strategy 3: Try combinations of words
+        for (int i = 0; i < originalArgs.length; i++) {
+            for (int j = i + 1; j <= originalArgs.length; j++) {
+                String combination = StringUtils.buildStringFromArgs(originalArgs, i, j);
+                if (!StringUtils.isNumber(combination)) {
+                    item = ItemSearchEngine.findInInventory(game.getPlayer(), combination);
+                    if (item != null) return item;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static class ParsedSellArgs {
+        final String itemName;
+        final int quantity;
+
+        ParsedSellArgs(String itemName, int quantity) {
+            this.itemName = itemName;
+            this.quantity = quantity;
         }
     }
 
@@ -94,6 +151,6 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
 
     @Override
     public String getHelpText() {
-        return "Sell items to the shop\nUsage: sell <item name> [quantity]\nAliases: trade, exchange";
+        return "Sell items to the shop";
     }
 }

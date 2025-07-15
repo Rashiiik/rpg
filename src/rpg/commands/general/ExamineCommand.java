@@ -4,7 +4,8 @@ import rpg.commands.Command;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
-import rpg.utils.ItemUtil;
+import rpg.utils.ItemSearchEngine;
+import rpg.utils.StringUtils;
 
 public class ExamineCommand implements Command {
 
@@ -15,11 +16,12 @@ public class ExamineCommand implements Command {
             return;
         }
 
-        String target = ItemUtil.filterAndJoinArgs(args);
+        String target = StringUtils.buildStringFromArgs(args);
+        String filteredTarget = ItemSearchEngine.filterSearchTerm(target);
         Player player = game.getPlayer();
 
         // Check inventory first
-        Item item = ItemUtil.findItemInInventory(player, target);
+        Item item = ItemSearchEngine.findInInventoryProgressive(player, target, filteredTarget);
         if (item != null) {
             displayItemDetails(game, item);
             provideDetailedItemInfo(game, item);
@@ -34,7 +36,7 @@ public class ExamineCommand implements Command {
         }
 
         // Check room items
-        Item roomItem = game.getCurrentRoom().findItem(target);
+        Item roomItem = ItemSearchEngine.findInRoomProgressive(game.getCurrentRoom(), target, filteredTarget);
         if (roomItem != null) {
             displayItemDetails(game, roomItem);
             return;

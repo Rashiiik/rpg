@@ -5,6 +5,8 @@ import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
 import rpg.items.OldCoin;
+import rpg.utils.ItemSearchEngine;
+import rpg.utils.StringUtils;
 
 public class UseCommand implements Command {
 
@@ -17,7 +19,7 @@ public class UseCommand implements Command {
         }
 
         // Check if this is a "use X on Y" command
-        int onIndex = findOnKeyword(args);
+        int onIndex = StringUtils.findKeywordIndex(args, "on");
         if (onIndex != -1) {
             executeUseOn(game, args, onIndex);
             return;
@@ -27,20 +29,13 @@ public class UseCommand implements Command {
         executeRegularUse(game, args);
     }
 
-    private int findOnKeyword(String[] args) {
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equalsIgnoreCase("on")) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     private void executeRegularUse(Game game, String[] args) {
         Player player = game.getPlayer();
-        String itemName = String.join(" ", args);
+        String itemName = StringUtils.buildStringFromArgs(args);
 
-        Item item = player.findItem(itemName);
+        // Use centralized search engine
+        Item item = ItemSearchEngine.findInInventory(player, itemName);
+
         if (item == null) {
             game.getGui().displayMessage("You don't have an item called '" + itemName + "'.");
             return;
@@ -77,11 +72,13 @@ public class UseCommand implements Command {
             return;
         }
 
-        String itemName = buildStringFromArgs(args, 0, onIndex);
-        String targetName = buildStringFromArgs(args, onIndex + 1, args.length);
+        String itemName = StringUtils.buildStringFromArgs(args, 0, onIndex);
+        String targetName = StringUtils.buildStringFromArgs(args, onIndex + 1, args.length);
 
         Player player = game.getPlayer();
-        Item item = player.findItem(itemName);
+
+        // Use centralized search engine
+        Item item = ItemSearchEngine.findInInventory(player, itemName);
 
         if (item == null) {
             game.getGui().displayMessage("You don't have an item called '" + itemName + "'.");
@@ -94,15 +91,6 @@ public class UseCommand implements Command {
         } else {
             game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
         }
-    }
-
-    private String buildStringFromArgs(String[] args, int start, int end) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = start; i < end; i++) {
-            if (i > start) builder.append(" ");
-            builder.append(args[i]);
-        }
-        return builder.toString();
     }
 
     private boolean isCounterTarget(String targetName) {

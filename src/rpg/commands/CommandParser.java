@@ -104,7 +104,8 @@ public class CommandParser {
             "health", "mana", "magic", "spell", "spells", "counter", "table",
             "chest", "door", "altar", "statue", "fountain", "well", "tree",
             "rock", "stone", "wall", "floor", "ceiling", "window", "chair",
-            "bed", "barrel", "crate", "box", "lever", "button", "switch"
+            "bed", "barrel", "crate", "box", "lever", "button", "switch",
+            "revolver", "pistol", "gun", "weapon", "knife", "blade", "axe"
     ));
 
     private static final Set<String> IMPORTANT_PREPOSITIONS = new HashSet<>(Arrays.asList(
@@ -150,6 +151,7 @@ public class CommandParser {
             return;
         }
 
+        // Special case for single "I" -> inventory
         if (words.length == 1 && words[0].equalsIgnoreCase("I")) {
             executeCommand("inventory", new String[0], new String[0]);
             return;
@@ -167,6 +169,7 @@ public class CommandParser {
     }
 
     private ParsedCommand findCommandInSentence(String[] words) {
+        // Strategy 1: Look for explicit command words
         for (int i = 0; i < words.length; i++) {
             String word = words[i].toLowerCase();
             if (ALL_COMMAND_WORDS.containsKey(word)) {
@@ -174,16 +177,19 @@ public class CommandParser {
             }
         }
 
+        // Strategy 2: Check for implicit movement
         ParsedCommand movementCommand = checkForImplicitMovement(words);
         if (movementCommand != null) {
             return movementCommand;
         }
 
+        // Strategy 3: Check for contextual commands
         ParsedCommand contextCommand = checkForContextualCommands(words);
         if (contextCommand != null) {
             return contextCommand;
         }
 
+        // Strategy 4: Default to first word if it's a known command
         String firstWord = words[0].toLowerCase();
         if (ALL_COMMAND_WORDS.containsKey(firstWord)) {
             return createParsedCommand(ALL_COMMAND_WORDS.get(firstWord), words, 0);
@@ -193,6 +199,7 @@ public class CommandParser {
     }
 
     private ParsedCommand createParsedCommand(String commandName, String[] words, int commandIndex) {
+        // Extract all arguments except the command word itself
         List<String> argsList = new ArrayList<>();
         for (int i = 0; i < words.length; i++) {
             if (i != commandIndex) {
@@ -201,17 +208,45 @@ public class CommandParser {
         }
 
         String[] originalArgs = argsList.toArray(new String[0]);
-        String[] filteredArgs = extractMeaningfulWords(originalArgs, commandName);
+
+        // Create multiple argument variations for better matching
+        String[] filteredArgs = createArgumentVariations(originalArgs, commandName);
 
         return new ParsedCommand(commandName, originalArgs, filteredArgs);
+    }
+
+    private String[] createArgumentVariations(String[] originalArgs, String commandName) {
+        if (originalArgs.length == 0) {
+            return new String[0];
+        }
+
+        List<String> bestArgs = new ArrayList<>();
+
+        for (String arg : originalArgs) {
+            String lowerArg = arg.toLowerCase();
+
+            // Keep numbers, game objects, directions, and important prepositions
+            if (isNumber(arg) ||
+                    GAME_OBJECTS.contains(lowerArg) ||
+                    DIRECTION_WORDS.contains(lowerArg) ||
+                    IMPORTANT_PREPOSITIONS.contains(lowerArg)) {
+                bestArgs.add(lowerArg);
+            }
+        }
+
+        // If we filtered out everything, use the first original arg
+        if (bestArgs.isEmpty() && originalArgs.length > 0) {
+            bestArgs.add(originalArgs[0].toLowerCase());
+        }
+
+        return bestArgs.toArray(new String[0]);
     }
 
     private ParsedCommand checkForImplicitMovement(String[] words) {
         for (String word : words) {
             String lowerWord = word.toLowerCase();
             if (DIRECTION_WORDS.contains(lowerWord)) {
-                // This is likely a movement command
-                String[] filteredArgs = extractMeaningfulWords(words, "go");
+                String[] filteredArgs = createArgumentVariations(words, "go");
                 return new ParsedCommand("go", words, filteredArgs);
             }
         }
@@ -269,38 +304,17 @@ public class CommandParser {
 
     private ParsedCommand extractObjectCommand(String command, String[] words) {
         String[] originalArgs = words;
-        String[] filteredArgs = extractMeaningfulWords(originalArgs, command);
+        String[] filteredArgs = createArgumentVariations(originalArgs, command);
         return new ParsedCommand(command, originalArgs, filteredArgs);
     }
 
-    private String[] extractMeaningfulWords(String[] words, String commandName) {
-        List<String> meaningfulWords = new ArrayList<>();
-        int maxArgs = getMaxArgsForCommand(commandName);
-
-        for (String word : words) {
-            if (meaningfulWords.size() >= maxArgs) {
-                break;
-            }
-
-            String lowerWord = word.toLowerCase();
-
-            boolean isNumber = false;
-            try {
-                Integer.parseInt(word);
-                isNumber = true;
-            } catch (NumberFormatException e) {
-                // go on
-            }
-
-            if (GAME_OBJECTS.contains(lowerWord) ||
-                    DIRECTION_WORDS.contains(lowerWord) ||
-                    IMPORTANT_PREPOSITIONS.contains(lowerWord) ||
-                    isNumber) {
-                meaningfulWords.add(lowerWord);
-            }
+    private boolean isNumber(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
-
-        return meaningfulWords.toArray(new String[0]);
     }
 
     private void executeCommand(String commandName, String[] originalArgs, String[] filteredArgs) {
@@ -327,33 +341,6 @@ public class CommandParser {
 
     public void addCommand(String name, Command command) {
         registerCommand(name, command);
-    }
-
-    private int getMaxArgsForCommand(String commandName) {
-        switch (commandName.toLowerCase()) {
-            case "use":
-                return 3;
-            case "take":
-            case "get":
-            case "grab":
-                return 1;
-            case "examine":
-            case "inspect":
-                return 1;
-            case "go":
-            case "move":
-                return 1;
-            case "buy":
-            case "sell":
-                return 2;
-            case "help":
-            case "stats":
-            case "inventory":
-            case "look":
-                return 0;
-            default:
-                return 3;
-        }
     }
 
     private static class ParsedCommand {

@@ -1,6 +1,7 @@
 package rpg.player;
 
 import rpg.items.Item;
+import rpg.utils.ItemSearchEngine;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,149 +77,14 @@ public class Inventory {
         return count;
     }
 
+    // Delegate to centralized search engine
     public Item findItem(String itemName) {
-        if (itemName == null || itemName.trim().isEmpty()) {
-            return null;
-        }
-
-        String searchTerm = itemName.toLowerCase().trim();
-
-        // Strategy 1: Try exact name match first
-        Item result = findByExactName(searchTerm);
-        if (result != null) return result;
-
-        // Strategy 2: Try partial name matching (contains)
-        result = findByPartialName(searchTerm);
-        if (result != null) return result;
-
-        // Strategy 3: Try word-by-word matching
-        result = findByWordMatching(searchTerm);
-        if (result != null) return result;
-
-        // Strategy 4: Try keyword/alias matching
-        result = findByKeywords(searchTerm);
-        if (result != null) return result;
-
-        // Strategy 5: Try filtered search (remove common articles)
-        String filteredSearch = filterSearchTerm(searchTerm);
-        if (!filteredSearch.equals(searchTerm)) {
-            return findItem(filteredSearch); // Recursive call with filtered term
-        }
-
-        return null;
-    }
-
-    private Item findByExactName(String searchTerm) {
-        for (Item item : items) {
-            if (item.getName().toLowerCase().equals(searchTerm)) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    private Item findByPartialName(String searchTerm) {
-        for (Item item : items) {
-            if (item.getName().toLowerCase().contains(searchTerm)) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    private Item findByWordMatching(String searchTerm) {
-        String[] searchWords = searchTerm.split("\\s+");
-
-        for (Item item : items) {
-            String itemNameLower = item.getName().toLowerCase();
-            String[] itemWords = itemNameLower.split("\\s+");
-
-            // Check if all search words are found in item name
-            boolean allWordsFound = true;
-            for (String searchWord : searchWords) {
-                boolean wordFound = false;
-                for (String itemWord : itemWords) {
-                    if (itemWord.equals(searchWord)) {
-                        wordFound = true;
-                        break;
-                    }
-                }
-                if (!wordFound) {
-                    allWordsFound = false;
-                    break;
-                }
-            }
-
-            if (allWordsFound) {
-                return item;
-            }
-        }
-
-        // Fallback: try single word matching
-        for (String searchWord : searchWords) {
-            for (Item item : items) {
-                String itemNameLower = item.getName().toLowerCase();
-                String[] itemWords = itemNameLower.split("\\s+");
-
-                for (String itemWord : itemWords) {
-                    if (itemWord.equals(searchWord)) {
-                        return item;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private Item findByKeywords(String searchTerm) {
-        for (Item item : items) {
-            if (item.matchesSearch(searchTerm)) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    private String filterSearchTerm(String searchTerm) {
-        String[] words = searchTerm.split("\\s+");
-        StringBuilder filtered = new StringBuilder();
-
-        for (String word : words) {
-            // Remove common articles and filler words
-            if (!isFillerWord(word)) {
-                if (filtered.length() > 0) {
-                    filtered.append(" ");
-                }
-                filtered.append(word);
-            }
-        }
-
-        return filtered.toString();
-    }
-
-    private boolean isFillerWord(String word) {
-        return word.equals("the") || word.equals("a") || word.equals("an") ||
-                word.equals("damn") || word.equals("fucking") || word.equals("bloody");
+        return ItemSearchEngine.findItem(items, itemName);
     }
 
     // Enhanced findItem method that tries multiple search strategies
     public Item findItemProgressive(String originalTerm, String filteredTerm) {
-        if (originalTerm == null || originalTerm.trim().isEmpty()) {
-            return null;
-        }
-
-        // Try original term first
-        Item result = findItem(originalTerm);
-        if (result != null) return result;
-
-        // Try filtered term if different
-        if (filteredTerm != null && !filteredTerm.equals(originalTerm)) {
-            result = findItem(filteredTerm);
-            if (result != null) return result;
-        }
-
-        return null;
+        return ItemSearchEngine.findItemProgressive(items, originalTerm, filteredTerm);
     }
 
     // Check if inventory contains item
