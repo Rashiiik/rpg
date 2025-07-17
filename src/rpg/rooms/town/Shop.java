@@ -1,22 +1,39 @@
 package rpg.rooms.town;
 
+import rpg.items.OldCoin;
+import rpg.items.Key;
 import rpg.rooms.Room;
 import rpg.core.Game;
-import rpg.items.OldCoin;
 import rpg.items.Item;
 import rpg.items.Bullet;
 import rpg.shop.ShopItem;
+import rpg.utils.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Shop extends Room {
     private List<ShopItem> shopInventory;
+    private ShopBasement basement;
 
     public Shop() {
         super("Item Shop", "Tucked away in a fog-drenched alley of the Backlund docks—where gas lamps flicker and shadows stretch with minds of their own—stands a narrow, leaning storefront with windows dulled by age and secrets.");
 
         addItem(new OldCoin());
+        addItem(new Key("Basement")); // Add the basement key to the shop
+
+        // Create the basement
+        basement = new ShopBasement();
+
         initializeShopInventory();
+        setupBasementConnection();
+    }
+
+    private void setupBasementConnection() {
+        // The basement connection back to shop
+        basement.addConnection("up", this);
+        basement.addConnection("upstairs", this);
+        basement.addConnection("shop", this);
+        basement.addConnection("back", this);
     }
 
     private void initializeShopInventory() {
@@ -43,6 +60,7 @@ public class Shop extends Room {
 
         if (!game.getStoryFlags().hasFlag("shop_visited")) {
             game.getGui().displayMessage("You notice a peculiar display case behind the counter, gleaming despite the shop's dusty atmosphere.");
+            game.getGui().displayMessage("In the corner, you spot a heavy wooden door with iron bands - it appears to lead downstairs.");
             game.getStoryFlags().addFlag("shop_visited");
         }
 
@@ -69,6 +87,16 @@ public class Shop extends Room {
             game.getGui().displayMessage("- A worn wooden counter");
         }
 
+        // Basement door description
+        game.getGui().displayMessage("");
+        game.getGui().displayMessage("In the corner, you see:");
+        if (game.getStoryFlags().hasFlag("basement_unlocked")) {
+            game.getGui().displayMessage("- An open wooden door leading to a basement (you can go 'down' or 'basement')");
+        } else {
+            game.getGui().displayMessage("- A heavy wooden door with iron bands and a large keyhole");
+            game.getGui().displayMessage("- The door appears to be locked and leads downstairs");
+        }
+
         game.getGui().displayMessage("");
         game.getGui().displayMessage("The shopkeeper stands behind the counter, ready to help.");
         game.getGui().displayMessage("Type 'buy' to see available items for purchase.");
@@ -80,6 +108,108 @@ public class Shop extends Room {
         displayItems(game);
     }
 
+    // Override hasConnection to include basement
+    @Override
+    public boolean hasConnection(String direction) {
+        String lowerDirection = direction.toLowerCase();
+
+        // Check if trying to go to basement
+        if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
+            return true;
+        }
+
+        return super.hasConnection(direction);
+    }
+
+    // Override displayConnections to show basement option
+    @Override
+    public void displayConnections(Game game) {
+        super.displayConnections(game); // Show normal connections first
+
+        // Add basement connection info
+        if (game.getStoryFlags().hasFlag("basement_unlocked")) {
+            game.getGui().displayMessage("- down (to Shop Basement)");
+        } else {
+            game.getGui().displayMessage("- down (to basement - LOCKED, requires key)");
+        }
+    }
+
+    // Method to check if player can access basement
+    public boolean canAccessBasement(Game game) {
+        if (game != null) {
+            return game.getStoryFlags().hasFlag("basement_unlocked");
+        }
+        return false;
+    }
+
+    // Method to unlock basement (called when player uses key)
+    public void unlockBasement(Game game) {
+        if (!game.getStoryFlags().hasFlag("basement_unlocked")) {
+            game.getStoryFlags().addFlag("basement_unlocked");
+            game.getGui().displayMessage("You unlock the basement door with the key!");
+            game.getGui().displayMessage("The heavy wooden door creaks open, revealing stone stairs descending into darkness.");
+            game.getGui().displayMessage("You can now go 'down' to explore the basement.");
+        }
+    }
+
+    // Get the basement room (for room manager or other systems)
+    public ShopBasement getBasement() {
+        return basement;
+    }
+
+    // FIXED: Updated attemptMove to properly handle basement access
+    @Override
+    public boolean attemptMove(String direction, Game game) {
+        String lowerDirection = direction.toLowerCase();
+
+        // Check if trying to go to basement
+        if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
+            if (!canAccessBasement(game)) {
+                game.getGui().displayMessage("The basement door is locked. You need to find a way to unlock it first.");
+                game.getGui().displayMessage("The heavy wooden door has a large keyhole - maybe you need a key?");
+                return false; // Movement blocked
+            }
+        }
+
+        return super.attemptMove(direction, game); // Call parent method for other directions
+    }
+
+    // FIXED: Override getConnectedRoom to handle basement properly
+    @Override
+    public Room getConnectedRoom(String direction) {
+        String lowerDirection = direction.toLowerCase();
+
+        // Check if trying to go to basement
+        if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
+            // Return basement room regardless of unlock status
+            // The unlock check is handled in attemptMove/tryMove
+            return basement;
+        }
+
+        // For all other directions, use the parent implementation
+        return super.getConnectedRoom(direction);
+    }
+
+    // FIXED: Override tryMove to properly integrate with Room's movement system
+    @Override
+    public Room tryMove(String direction, Game game) {
+        String lowerDirection = direction.toLowerCase();
+
+        // Check if trying to go to basement
+        if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
+            // First check if movement is allowed
+            if (!attemptMove(direction, game)) {
+                return null; // Movement blocked
+            }
+            // If allowed, return the basement room
+            return basement;
+        }
+
+        // For all other directions, use the parent implementation
+        return super.tryMove(direction, game);
+    }
+
+    // All the existing shop methods remain the same
     public void displayShopInventory(Game game) {
         game.getGui().displayMessage("=== SHOP INVENTORY ===");
 
@@ -110,14 +240,14 @@ public class Shop extends Room {
     }
 
     public ShopItem findShopItem(String itemName) {
-        if (itemName == null || itemName.trim().isEmpty()) {
+        if (StringUtils.isNullOrEmpty(itemName)) {
             return null;
         }
 
-        String searchTerm = itemName.toLowerCase().trim();
+        String searchTerm = StringUtils.safeTrim(itemName).toLowerCase();
 
         for (ShopItem shopItem : shopInventory) {
-            // Check if the item name matches
+            // Check if the item name matches using partial matching
             if (shopItem.getItem().getName().toLowerCase().contains(searchTerm)) {
                 return shopItem;
             }

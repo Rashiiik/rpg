@@ -2,6 +2,7 @@ package rpg.rooms;
 
 import rpg.core.Game;
 import rpg.items.Item;
+import rpg.utils.ItemSearchEngine;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,16 +12,16 @@ public abstract class Room {
     protected String name;
     protected String description;
     protected Map<String, Room> connections;
-    protected List<Item> items; // ADD THIS
+    protected List<Item> items;
 
     public Room(String name, String description) {
         this.name = name;
         this.description = description;
         this.connections = new HashMap<>();
-        this.items = new ArrayList<>(); // ADD THIS
+        this.items = new ArrayList<>();
     }
 
-    // ADD ALL THESE ITEM MANAGEMENT METHODS
+    // Item management methods using ItemSearchEngine
     public void addItem(Item item) {
         items.add(item);
     }
@@ -38,33 +39,7 @@ public abstract class Room {
     }
 
     public Item findItem(String itemName) {
-        if (itemName == null || itemName.trim().isEmpty()) {
-            return null;
-        }
-
-        String searchTerm = itemName.toLowerCase().trim();
-
-        // First pass: try exact name match
-        for (Item item : items) {
-            if (item.getName().toLowerCase().equals(searchTerm)) {
-                return item;
-            }
-        }
-
-        // Second pass: try partial matching - check if any word in the item name matches
-        for (Item item : items) {
-            String itemNameLower = item.getName().toLowerCase();
-
-            // Check if search term matches any word in the item name
-            String[] words = itemNameLower.split("\\s+");
-            for (String word : words) {
-                if (word.equals(searchTerm)) {
-                    return item;
-                }
-            }
-        }
-
-        return null;
+        return ItemSearchEngine.findItem(items, itemName);
     }
 
     public List<Item> getItems() {
@@ -75,7 +50,6 @@ public abstract class Room {
         return findItem(itemName) != null;
     }
 
-    // ADD THIS METHOD
     public void displayItems(Game game) {
         if (!items.isEmpty()) {
             game.getGui().displayMessage("You see:");
@@ -85,10 +59,11 @@ public abstract class Room {
         }
     }
 
-    // EXISTING METHODS REMAIN THE SAME
+    // Abstract methods that subclasses must implement
     public abstract void enter(Game game);
     public abstract void look(Game game);
 
+    // Connection management
     public void addConnection(String direction, Room room) {
         connections.put(direction.toLowerCase(), room);
     }
@@ -109,6 +84,23 @@ public abstract class Room {
         return connections.containsKey(direction.toLowerCase());
     }
 
+    // Method that rooms can override to block movement
+    public boolean attemptMove(String direction, Game game) {
+        // By default, all movement is allowed
+        return true;
+    }
+
+    // Method to check if movement is possible and get the destination room
+    public Room tryMove(String direction, Game game) {
+        // First check if the room allows this movement
+        if (!attemptMove(direction, game)) {
+            return null; // Movement blocked by room-specific logic
+        }
+
+        // If movement is allowed, get the connected room
+        return getConnectedRoom(direction);
+    }
+
     public void displayConnections(Game game) {
         if (connections.isEmpty()) {
             game.getGui().displayMessage("There are no exits from here.");
@@ -122,6 +114,7 @@ public abstract class Room {
         }
     }
 
+    // Getters
     public String getName() { return name; }
     public String getDescription() { return description; }
 }

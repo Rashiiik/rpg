@@ -1,32 +1,39 @@
 package rpg.commands.items;
 
 import rpg.commands.Command;
+import rpg.commands.CommandParser;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
 import rpg.items.OldCoin;
+import rpg.items.Key;
 import rpg.utils.ItemSearchEngine;
 import rpg.utils.StringUtils;
 
-public class UseCommand implements Command {
+public class UseCommand implements Command, CommandParser.EnhancedCommand {
 
     @Override
     public void execute(Game game, String[] args) {
-        if (args.length == 0) {
+        execute(game, args, args);
+    }
+
+    @Override
+    public void execute(Game game, String[] originalArgs, String[] filteredArgs) {
+        if (originalArgs.length == 0) {
             game.getGui().displayMessage("Use what? Specify an item name.");
             game.getGui().displayMessage("Usage: use <item_name> or use <item> on <target>");
             return;
         }
 
         // Check if this is a "use X on Y" command
-        int onIndex = StringUtils.findKeywordIndex(args, "on");
+        int onIndex = StringUtils.findKeywordIndex(originalArgs, "on");
         if (onIndex != -1) {
-            executeUseOn(game, args, onIndex);
+            executeUseOn(game, originalArgs, onIndex);
             return;
         }
 
         // Regular use command logic
-        executeRegularUse(game, args);
+        executeRegularUse(game, originalArgs);
     }
 
     private void executeRegularUse(Game game, String[] args) {
@@ -82,6 +89,13 @@ public class UseCommand implements Command {
 
         if (item == null) {
             game.getGui().displayMessage("You don't have an item called '" + itemName + "'.");
+            return;
+        }
+
+        // Handle Key interactions
+        if (item instanceof Key) {
+            Key key = (Key) item;
+            key.useOn(player, targetName, game);
             return;
         }
 

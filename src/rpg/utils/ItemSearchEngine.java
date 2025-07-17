@@ -11,16 +11,12 @@ import java.util.ArrayList;
 
 public class ItemSearchEngine {
 
-    private static final Set<String> FILLER_WORDS = new HashSet<>(Arrays.asList(
-            "the", "a", "an", "damn", "fucking", "bloody", "goddam", "stupid", "cursed"
-    ));
-
     public static <T extends Item> T findItem(List<T> items, String searchTerm) {
-        if (searchTerm == null || searchTerm.trim().isEmpty() || items == null) {
+        if (StringUtils.isNullOrEmpty(searchTerm) || items == null) {
             return null;
         }
 
-        String cleanTerm = searchTerm.toLowerCase().trim();
+        String cleanTerm = StringUtils.safeTrim(searchTerm).toLowerCase();
 
         // Strategy 1: Exact name match
         T result = findByExactName(items, cleanTerm);
@@ -53,7 +49,7 @@ public class ItemSearchEngine {
         if (result != null) return result;
 
         // Try filtered term if different
-        if (filteredTerm != null && !filteredTerm.equals(originalTerm)) {
+        if (!StringUtils.isNullOrEmpty(filteredTerm) && !filteredTerm.equals(originalTerm)) {
             result = findItem(items, filteredTerm);
             if (result != null) return result;
         }
@@ -178,25 +174,16 @@ public class ItemSearchEngine {
      * Filter out filler words from search term
      */
     public static String filterSearchTerm(String searchTerm) {
-        if (searchTerm == null) return "";
+        if (StringUtils.isNullOrEmpty(searchTerm)) {
+            return "";
+        }
 
         String[] words = searchTerm.split("\\s+");
         StringBuilder filtered = new StringBuilder();
 
-        for (String word : words) {
-            if (!FILLER_WORDS.contains(word.toLowerCase())) {
-                if (filtered.length() > 0) {
-                    filtered.append(" ");
-                }
-                filtered.append(word);
-            }
-        }
-
         return filtered.toString();
     }
-    /**
-     * Create search terms array with original and filtered versions
-     */
+
     public static String[] createSearchTerms(String[] args) {
         String original = String.join(" ", args);
         String filtered = filterSearchTerm(original);

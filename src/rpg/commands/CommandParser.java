@@ -2,6 +2,7 @@ package rpg.commands;
 
 import rpg.commands.general.ExamineCommand;
 import rpg.commands.items.TakeCommand;
+import rpg.commands.items.UnlockCommand;
 import rpg.commands.shop.BuyCommand;
 import rpg.commands.shop.SellCommand;
 import rpg.core.Game;
@@ -11,6 +12,7 @@ import rpg.commands.movement.LookCommand;
 import rpg.commands.movement.GoCommand;
 import rpg.commands.items.InventoryCommand;
 import rpg.commands.items.UseCommand;
+import rpg.utils.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
@@ -24,69 +26,31 @@ public class CommandParser {
     private Game game;
 
     private static final Map<String, String> ALL_COMMAND_WORDS = new HashMap<>();
+
+    // Static initializer to reduce duplication
     static {
-        // Take command variants
-        ALL_COMMAND_WORDS.put("take", "take");
-        ALL_COMMAND_WORDS.put("get", "take");
-        ALL_COMMAND_WORDS.put("grab", "take");
-        ALL_COMMAND_WORDS.put("pickup", "take");
-        ALL_COMMAND_WORDS.put("pick", "take");
+        initializeCommandMappings();
+    }
 
-        // Examine command variants
-        ALL_COMMAND_WORDS.put("examine", "examine");
-        ALL_COMMAND_WORDS.put("inspect", "examine");
-        ALL_COMMAND_WORDS.put("study", "examine");
-        ALL_COMMAND_WORDS.put("check", "examine");
-        ALL_COMMAND_WORDS.put("ex", "examine");
+    private static void initializeCommandMappings() {
+        // Define command groups to reduce duplication
+        addCommandGroup("take", "take", "get", "grab", "pickup", "pick");
+        addCommandGroup("examine", "examine", "inspect", "study", "check", "ex");
+        addCommandGroup("inventory", "inventory", "inv", "bag");
+        addCommandGroup("stats", "stats", "stat", "status", "info");
+        addCommandGroup("help", "help", "h", "?");
+        addCommandGroup("use", "use", "u", "consume", "drink", "eat", "place", "insert", "put");
+        addCommandGroup("go", "go", "move", "walk", "head", "travel");
+        addCommandGroup("look", "look", "l", "see", "observe");
+        addCommandGroup("buy", "buy", "purchase", "acquire");
+        addCommandGroup("sell", "sell", "trade", "exchange");
+        addCommandGroup("unlock", "unlock", "open"); // Added unlock command
+    }
 
-        // Inventory command variants
-        ALL_COMMAND_WORDS.put("inventory", "inventory");
-        ALL_COMMAND_WORDS.put("inv", "inventory");
-        ALL_COMMAND_WORDS.put("bag", "inventory");
-
-        // Stats command variants
-        ALL_COMMAND_WORDS.put("stats", "stats");
-        ALL_COMMAND_WORDS.put("stat", "stats");
-        ALL_COMMAND_WORDS.put("status", "stats");
-        ALL_COMMAND_WORDS.put("info", "stats");
-
-        // Help command variants
-        ALL_COMMAND_WORDS.put("help", "help");
-        ALL_COMMAND_WORDS.put("h", "help");
-        ALL_COMMAND_WORDS.put("?", "help");
-
-        // Use command variants
-        ALL_COMMAND_WORDS.put("use", "use");
-        ALL_COMMAND_WORDS.put("u", "use");
-        ALL_COMMAND_WORDS.put("consume", "use");
-        ALL_COMMAND_WORDS.put("drink", "use");
-        ALL_COMMAND_WORDS.put("eat", "use");
-        ALL_COMMAND_WORDS.put("place", "use");
-        ALL_COMMAND_WORDS.put("insert", "use");
-        ALL_COMMAND_WORDS.put("put", "use");
-
-        // Go command variants
-        ALL_COMMAND_WORDS.put("go", "go");
-        ALL_COMMAND_WORDS.put("move", "go");
-        ALL_COMMAND_WORDS.put("walk", "go");
-        ALL_COMMAND_WORDS.put("head", "go");
-        ALL_COMMAND_WORDS.put("travel", "go");
-
-        // Look command variants
-        ALL_COMMAND_WORDS.put("look", "look");
-        ALL_COMMAND_WORDS.put("l", "look");
-        ALL_COMMAND_WORDS.put("see", "look");
-        ALL_COMMAND_WORDS.put("observe", "look");
-
-        // Buy command variants
-        ALL_COMMAND_WORDS.put("buy", "buy");
-        ALL_COMMAND_WORDS.put("purchase", "buy");
-        ALL_COMMAND_WORDS.put("acquire", "buy");
-
-        // Sell command variants
-        ALL_COMMAND_WORDS.put("sell", "sell");
-        ALL_COMMAND_WORDS.put("trade", "sell");
-        ALL_COMMAND_WORDS.put("exchange", "sell");
+    private static void addCommandGroup(String mainCommand, String... aliases) {
+        for (String alias : aliases) {
+            ALL_COMMAND_WORDS.put(alias, mainCommand);
+        }
     }
 
     private static final Set<String> DIRECTION_WORDS = new HashSet<>(Arrays.asList(
@@ -105,12 +69,14 @@ public class CommandParser {
             "chest", "door", "altar", "statue", "fountain", "well", "tree",
             "rock", "stone", "wall", "floor", "ceiling", "window", "chair",
             "bed", "barrel", "crate", "box", "lever", "button", "switch",
-            "revolver", "pistol", "gun", "weapon", "knife", "blade", "axe"
+            "revolver", "pistol", "gun", "weapon", "knife", "blade", "axe",
+            "basement", "downstairs" // Added basement-related words
     ));
 
     private static final Set<String> IMPORTANT_PREPOSITIONS = new HashSet<>(Arrays.asList(
             "on", "in", "into", "onto", "upon", "against", "over", "under",
-            "behind", "beside", "near", "inside", "outside", "through", "across"
+            "behind", "beside", "near", "inside", "outside", "through", "across",
+            "with" // Added "with" for "unlock X with Y" commands
     ));
 
     public CommandParser(Game game) {
@@ -130,6 +96,7 @@ public class CommandParser {
         registerCommand("examine", new ExamineCommand());
         registerCommand("buy", new BuyCommand());
         registerCommand("sell", new SellCommand());
+        registerCommand("unlock", new UnlockCommand()); // Added unlock command
     }
 
     private void registerCommand(String name, Command command) {
@@ -142,7 +109,7 @@ public class CommandParser {
     }
 
     public void parseAndExecute(String input) {
-        if (input == null || input.trim().isEmpty()) {
+        if (StringUtils.isNullOrEmpty(input)) {
             return;
         }
 
@@ -226,7 +193,7 @@ public class CommandParser {
             String lowerArg = arg.toLowerCase();
 
             // Keep numbers, game objects, directions, and important prepositions
-            if (isNumber(arg) ||
+            if (StringUtils.isNumber(arg) ||
                     GAME_OBJECTS.contains(lowerArg) ||
                     DIRECTION_WORDS.contains(lowerArg) ||
                     IMPORTANT_PREPOSITIONS.contains(lowerArg)) {
@@ -256,20 +223,26 @@ public class CommandParser {
     private ParsedCommand checkForContextualCommands(String[] words) {
         String sentence = String.join(" ", words).toLowerCase();
 
-        if (sentence.contains("what") && (sentence.contains("have") || sentence.contains("carrying"))) {
+        // Use helper methods to reduce duplication
+        if (containsWords(sentence, "what") && containsAnyOf(sentence, "have", "carrying")) {
             return new ParsedCommand("inventory", new String[0], new String[0]);
         }
 
-        if (sentence.contains("where") && sentence.contains("am")) {
+        if (containsWords(sentence, "where") && containsWords(sentence, "am")) {
             return new ParsedCommand("look", new String[0], new String[0]);
         }
 
-        if (sentence.contains("how") && sentence.contains("health")) {
+        if (containsWords(sentence, "how") && containsWords(sentence, "health")) {
             return new ParsedCommand("stats", new String[0], new String[0]);
         }
 
-        if (sentence.contains("what") && (sentence.contains("sell") || sentence.contains("buy") || sentence.contains("available"))) {
+        if (containsWords(sentence, "what") && containsAnyOf(sentence, "sell", "buy", "available")) {
             return new ParsedCommand("buy", new String[0], new String[0]);
+        }
+
+        // Check for unlock-related phrases
+        if (containsAnyOf(sentence, "unlock", "open") && containsAnyOf(sentence, "door", "basement")) {
+            return extractObjectCommand("unlock", words);
         }
 
         if (containsAnyGameObject(sentence)) {
@@ -284,37 +257,23 @@ public class CommandParser {
         return null;
     }
 
+    // Helper methods to reduce duplication
+    private boolean containsWords(String sentence, String word) {
+        return sentence.contains(word);
+    }
+
     private boolean containsAnyGameObject(String sentence) {
-        for (String object : GAME_OBJECTS) {
-            if (sentence.contains(object)) {
-                return true;
-            }
-        }
-        return false;
+        return GAME_OBJECTS.stream().anyMatch(sentence::contains);
     }
 
     private boolean containsAnyOf(String sentence, String... keywords) {
-        for (String keyword : keywords) {
-            if (sentence.contains(keyword)) {
-                return true;
-            }
-        }
-        return false;
+        return Arrays.stream(keywords).anyMatch(sentence::contains);
     }
 
     private ParsedCommand extractObjectCommand(String command, String[] words) {
         String[] originalArgs = words;
         String[] filteredArgs = createArgumentVariations(originalArgs, command);
         return new ParsedCommand(command, originalArgs, filteredArgs);
-    }
-
-    private boolean isNumber(String str) {
-        try {
-            Integer.parseInt(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
     }
 
     private void executeCommand(String commandName, String[] originalArgs, String[] filteredArgs) {

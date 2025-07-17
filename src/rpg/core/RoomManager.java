@@ -5,6 +5,7 @@ import rpg.rooms.town.Town;
 import rpg.rooms.town.Shop;
 import rpg.rooms.town.Inn;
 import rpg.rooms.town.TownCenter;
+import rpg.rooms.town.ShopBasement;
 import rpg.rooms.outskirts.Forest;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,10 @@ public class RoomManager {
         rooms.put("center", townCenter);
         rooms.put("forest", forest);
 
+        // Add the basement (accessed through shop)
+        rooms.put("basement", shop.getBasement());
+        rooms.put("shopbasement", shop.getBasement());
+
         // Set starting room
         startingRoom = town;
     }
@@ -61,6 +66,7 @@ public class RoomManager {
         shop.addConnection("south", town);
         shop.addConnection("town", town);
         shop.addConnection("back", town);
+        // Note: Basement connections are handled within the Shop class
 
         // Inn connections (back to town)
         inn.addConnection("west", town);

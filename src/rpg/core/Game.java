@@ -4,6 +4,7 @@ import rpg.player.Player;
 import rpg.rooms.Room;
 import rpg.gui.main.GameGUI;
 import rpg.commands.CommandParser;
+import javax.swing.SwingUtilities;
 
 public class Game {
 
@@ -28,11 +29,11 @@ public class Game {
         commandParser = new CommandParser(this); // Initialize command parser
         isRunning = true;
 
-        gui.displayMessage("====Welcome to Paradox Protocol====");
-        gui.displayMessage("Type 'help' for command suggestions");
-        gui.displayMessage("");
-
-        currentRoom.enter(this);
+        // Delay the room entry until after GUI is fully initialized
+        // This ensures the welcome message appears before the room description
+        SwingUtilities.invokeLater(() -> {
+            currentRoom.enter(this);
+        });
     }
 
     public void processCommand(String input) {

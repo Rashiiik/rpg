@@ -60,12 +60,7 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
         Transaction transaction = new Transaction(TransactionType.SELL, item, parsedArgs.quantity, totalValue, game.getPlayer());
 
         if (transaction.execute()) {
-            // Remove the sold items from player's inventory
-            if (parsedArgs.quantity > 1) {
-                game.getPlayer().getInventory().removeItems(item.getName(), parsedArgs.quantity);
-            } else {
-                game.getPlayer().getInventory().removeItem(item);
-            }
+            // Transaction already removes items from inventory, so we don't need to do it again
 
             // Add the sold items to the shop's inventory
             shop.addToShopInventory(item, parsedArgs.quantity);
