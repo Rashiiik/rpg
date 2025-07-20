@@ -2,7 +2,9 @@ package rpg.items;
 
 import rpg.player.Player;
 import rpg.core.Game;
+import rpg.rooms.Room;
 import rpg.rooms.town.Shop;
+import java.lang.reflect.Method;
 
 public class Key extends Item {
     private String keyType;
@@ -19,7 +21,12 @@ public class Key extends Item {
 
     @Override
     public void examine(Game game) {
-        if (keyType.equals("Basement")) {
+        if (keyType.equals("Tutorial")) {
+            game.getGui().displayMessage("This is a brass key, tarnished but ornate.");
+            game.getGui().displayMessage("The handle forms a tiny eight-pointed star, and the number 0 is etched into its side.");
+            game.getGui().displayMessage("It feels cold to the touch, as if it holds memories of forgotten places.");
+            game.getGui().displayMessage("You sense this key is meant for the iron door in the alley.");
+        } else if (keyType.equals("Basement")) {
             game.getGui().displayMessage("This is an old iron key with intricate engravings along its shaft.");
             game.getGui().displayMessage("The head of the key bears mystical symbols that seem to shift when you're not looking directly at them.");
             game.getGui().displayMessage("It feels heavy for its size, as if it holds more than just the power to unlock doors.");
@@ -34,46 +41,121 @@ public class Key extends Item {
 
     @Override
     public void use(Player player) {
-        // Get the game instance (you might need to pass this differently based on your architecture)
-        Game game = player.getGame(); // Assuming Player has access to Game
+        Game game = player.getGame();
 
-        game.getGui().displayMessage("You examine the " + getName() + ". It looks like it might open something important.");
-        game.getGui().displayMessage("Try using 'use key on door' or 'use key on basement' to unlock something specific.");
-    }
-
-    // Method for using key on specific targets
-    public void useOn(Player player, String target, Game game) {
-        if (keyType.equals("Basement")) {
-            // Check if player is in the shop
-            if (!(game.getCurrentRoom() instanceof Shop)) {
-                game.getGui().displayMessage("You need to be in the shop to use this key.");
-                return;
-            }
-
-            Shop shop = (Shop) game.getCurrentRoom();
-            String lowerTarget = target.toLowerCase();
-
-            // Check if target is basement door related
-            if (lowerTarget.contains("door") || lowerTarget.contains("basement") ||
-                    lowerTarget.contains("downstairs") || lowerTarget.equals("down")) {
-
-                if (shop.canAccessBasement(game)) {
-                    game.getGui().displayMessage("The basement door is already unlocked.");
-                } else {
-                    // Use the key to unlock the basement
-                    shop.unlockBasement(game);
-
-                    // Remove the key from player's inventory since it's been used
-                    player.removeItem(this);
-                    game.getGui().displayMessage("The " + getName() + " has been used and is no longer in your inventory.");
-                }
-            } else {
-                game.getGui().displayMessage("You can't use the " + getName() + " on that.");
-                game.getGui().displayMessage("Try using it on the 'door' or 'basement'.");
-            }
+        if (keyType.equals("Tutorial")) {
+            game.getGui().displayMessage("You examine the " + getName() + ". The brass gleams dully in the flickering light.");
+            game.getGui().displayMessage("Try using 'use key on door' to unlock the iron door in the alley.");
+        } else if (keyType.equals("Basement")) {
+            game.getGui().displayMessage("You examine the " + getName() + ". It looks like it might open something important.");
+            game.getGui().displayMessage("Try using 'use key on door' or 'use key on basement' to unlock something specific.");
         } else {
             game.getGui().displayMessage("You examine the " + getName() + ". It looks like it might open something important.");
+            game.getGui().displayMessage("Try using 'use key on door' or similar to unlock something specific.");
         }
+    }
+
+    public void useOn(Player player, String target, Game game) {
+        // FIXED: Use Game.getCurrentRoom() instead of RoomManager.getCurrentRoom()
+        Room currentRoom = game.getCurrentRoom();
+        boolean handled = false;
+
+        // First, try to let the current room handle the interaction
+        if (currentRoom != null) {
+            try {
+                // Use reflection to find and call the handleUseItemOn method
+                Method method = findHandleUseItemOnMethod(currentRoom.getClass());
+                if (method != null) {
+                    Object result = method.invoke(currentRoom, game, player, this, target);
+                    if (result instanceof Boolean && (Boolean) result) {
+                        handled = true;
+                        return; // Room handled it successfully
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error calling room's handleUseItemOn: " + e.getMessage());
+                e.printStackTrace(); // Add stack trace for debugging
+            }
+        }
+
+        // If room didn't handle it, try key-specific logic
+        if (!handled) {
+            handleKeySpecificLogic(player, target, game, currentRoom);
+        }
+    }
+
+    private Method findHandleUseItemOnMethod(Class<?> roomClass) {
+        Class<?> currentClass = roomClass;
+
+        while (currentClass != null) {
+            try {
+                Method method = currentClass.getDeclaredMethod("handleUseItemOn",
+                        Game.class, Player.class, Item.class, String.class);
+                method.setAccessible(true); // Make accessible if it's not public
+                return method;
+            } catch (NoSuchMethodException e) {
+                // Method not found in this class, try superclass
+                currentClass = currentClass.getSuperclass();
+            }
+        }
+
+        return null; // Method not found in class hierarchy
+    }
+
+    private void handleKeySpecificLogic(Player player, String target, Game game, Room currentRoom) {
+        String lowerTarget = target.toLowerCase();
+
+        if (keyType.equals("Basement")) {
+            handleBasementKey(player, target, lowerTarget, game, currentRoom);
+        } else if (keyType.equals("Tutorial")) {
+            handleTutorialKey(player, target, lowerTarget, game, currentRoom);
+        } else {
+            // Generic key behavior
+            game.getGui().displayMessage("You try to use the " + getName() + " on " + target + ".");
+            game.getGui().displayMessage("The key doesn't seem to work here. Try moving to the right location.");
+        }
+    }
+
+    private void handleBasementKey(Player player, String target, String lowerTarget, Game game, Room currentRoom) {
+        // Check if we're in a shop and trying to unlock basement-related targets
+        if (currentRoom instanceof Shop) {
+            Shop shop = (Shop) currentRoom;
+
+            if (lowerTarget.contains("door") || lowerTarget.contains("basement") ||
+                    lowerTarget.contains("keyhole") || lowerTarget.contains("lock")) {
+
+                if (game.getStoryFlags().hasFlag("basement_unlocked")) {
+                    game.getGui().displayMessage("The basement door is already unlocked.");
+                } else {
+                    game.getGui().displayMessage("You insert the basement key into the large keyhole.");
+                    game.getGui().displayMessage("The key turns with a satisfying *click*!");
+
+                    // Remove the key from player's inventory
+                    player.removeItem(this);
+
+                    // Unlock the basement
+                    shop.unlockBasement(game);
+                }
+                return;
+            }
+        }
+
+        // If not in shop or wrong target
+        game.getGui().displayMessage("You try to use the " + getName() + " on " + target + ".");
+        if (!(currentRoom instanceof Shop)) {
+            game.getGui().displayMessage("This basement key doesn't seem to belong here. Maybe try it in a shop?");
+        } else {
+            game.getGui().displayMessage("The key doesn't fit. Try using it on the basement door.");
+        }
+    }
+
+    private void handleTutorialKey(Player player, String target, String lowerTarget, Game game, Room currentRoom) {
+        game.getGui().displayMessage("You try to use the " + getName() + " on " + target + ".");
+        game.getGui().displayMessage("The tutorial key doesn't seem to work here yet. Implementation needed for this location.");
+    }
+
+    private boolean hasHandleUseItemOnMethod(Room room) {
+        return findHandleUseItemOnMethod(room.getClass()) != null;
     }
 
     public String getKeyType() {

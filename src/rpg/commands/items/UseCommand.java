@@ -90,18 +90,30 @@ public class UseCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
+        // DEBUG: Add some debug output
+        System.out.println("DEBUG - UseCommand.executeUseOn:");
+        System.out.println("  Item: " + item.getName() + " (" + item.getClass().getSimpleName() + ")");
+        System.out.println("  Target: '" + targetName + "'");
+        System.out.println("  Current Room: " + game.getCurrentRoom().getClass().getSimpleName());
+
+        // FIXED: First try to let the current room handle the interaction
+        boolean handled = game.getCurrentRoom().handleUseItemOn(game, player, item, targetName);
+        System.out.println("  Room handled: " + handled);
+
+        if (handled) {
+            return; // Room successfully handled the interaction
+        }
+
+        // FALLBACK: If room doesn't handle it, try the item's built-in behavior
         if (item instanceof Key) {
             Key key = (Key) item;
             key.useOn(player, targetName, game);
             return;
         }
 
-        if (game.getCurrentRoom().handleUseItemOn(game, player, item, targetName)) {
-            return;
-        }
-
-        // If room doesn't handle it, show generic failure message
+        // If nothing handles it, show generic failure message
         game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
+        game.getGui().displayMessage("Maybe you're not in the right location, or this combination doesn't work.");
     }
 
     @Override

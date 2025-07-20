@@ -4,6 +4,7 @@ import rpg.commands.Command;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
+import rpg.rooms.tutorial.StartingAlley;
 import rpg.utils.ItemSearchEngine;
 import rpg.utils.StringUtils;
 import rpg.rooms.Room;
@@ -39,12 +40,12 @@ public class ExamineCommand implements Command {
         }
 
         // TODO: Add similar checks for other rooms that might have custom examination
-        // if (currentRoom instanceof SomeOtherRoom) {
-        //     SomeOtherRoom otherRoom = (SomeOtherRoom) currentRoom;
-        //     if (otherRoom.handleExamine(game, target)) {
-        //         return;
-        //     }
-        // }
+        if (currentRoom instanceof StartingAlley) {
+            StartingAlley startingAlley = (StartingAlley) currentRoom;
+            if (startingAlley.handleExamine(game, target)) {
+                return;
+            }
+        }
 
         // Check room items
         Item roomItem = ItemSearchEngine.findInRoomProgressive(currentRoom, target, filteredTarget);

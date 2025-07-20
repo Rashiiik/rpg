@@ -6,6 +6,7 @@ import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
 import rpg.items.Key;
+import rpg.rooms.Room;
 import rpg.utils.ItemSearchEngine;
 import rpg.utils.StringUtils;
 
@@ -66,7 +67,13 @@ public class UnlockCommand implements Command, CommandParser.EnhancedCommand {
         }
 
         Key key = (Key) keyItem;
-        key.useOn(player, targetName, game);
+
+        // Try to use the key on the target in the current room
+        boolean success = tryUseKeyOnTarget(game, player, key, targetName);
+
+        if (!success) {
+            game.getGui().displayMessage("The " + key.getName() + " doesn't seem to work on " + targetName + ".");
+        }
     }
 
     private void executeAutoUnlock(Game game, String targetName, Player player) {
@@ -84,9 +91,47 @@ public class UnlockCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        // Use the found key on the target
+        // Try to use the found key on the target
         game.getGui().displayMessage("You try to unlock " + targetName + " with your " + foundKey.getName() + ".");
-        foundKey.useOn(player, targetName, game);
+
+        boolean success = tryUseKeyOnTarget(game, player, foundKey, targetName);
+
+        if (!success) {
+            game.getGui().displayMessage("The " + foundKey.getName() + " doesn't seem to work on " + targetName + ".");
+        }
+    }
+
+    /**
+     * Attempts to use a key on a target in the current room.
+     * This method handles the interaction between the key and the room.
+     */
+    private boolean tryUseKeyOnTarget(Game game, Player player, Key key, String targetName) {
+        // FIXED: Use Game.getCurrentRoom() instead of RoomManager.getCurrentRoom()
+        Room currentRoom = game.getCurrentRoom();
+
+        // Add debug information to see what room we're actually in
+        System.out.println("DEBUG - Current room: " + (currentRoom != null ? currentRoom.getClass().getSimpleName() + " - " + currentRoom.getName() : "null"));
+
+        // FIXED: Use the same approach as UseCommand - call handleUseItemOn directly
+        if (currentRoom != null) {
+            System.out.println("DEBUG - Trying room's handleUseItemOn method directly");
+            boolean handled = currentRoom.handleUseItemOn(game, player, key, targetName);
+            System.out.println("DEBUG - Room handled: " + handled);
+
+            if (handled) {
+                return true;
+            }
+        }
+
+        // Fallback: Call the key's useOn method directly (same as UseCommand)
+        try {
+            System.out.println("DEBUG - Trying key's useOn method as fallback");
+            key.useOn(player, targetName, game);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error using key: " + e.getMessage());
+            return false;
+        }
     }
 
     @Override

@@ -1,11 +1,8 @@
 package rpg.rooms.town;
 
-import rpg.items.OldCoin;
-import rpg.items.Key;
+import rpg.items.*;
 import rpg.rooms.Room;
 import rpg.core.Game;
-import rpg.items.Item;
-import rpg.items.Bullet;
 import rpg.shop.ShopItem;
 import rpg.utils.StringUtils;
 import rpg.player.Player;
@@ -16,13 +13,13 @@ public class Shop extends Room {
     private List<ShopItem> shopInventory;
     private ShopBasement basement;
 
+
     public Shop() {
         super("Item Shop", "Tucked away in a fog-drenched alley of the Backlund docks—where gas lamps flicker and shadows stretch with minds of their own—stands a narrow, leaning storefront with windows dulled by age and secrets.");
 
         addItem(new OldCoin());
-        addItem(new Key("Basement")); // Add the basement key to the shop
+        addItem(new Key("Basement"));
 
-        // Create the basement
         basement = new ShopBasement();
 
         initializeShopInventory();
@@ -34,13 +31,11 @@ public class Shop extends Room {
         System.out.println("DEBUG - Item: " + (item != null ? item.getClass().getSimpleName() + " - " + item.getName() : "null"));
         System.out.println("DEBUG - Target: '" + targetName + "'");
 
-        // Add null checks for safety
         if (game == null || player == null || item == null || targetName == null) {
             System.out.println("DEBUG - Null parameter detected");
             return false;
         }
 
-        // Handle OldCoin on counter interaction
         if (item instanceof OldCoin) {
             System.out.println("DEBUG - Item is OldCoin");
             boolean isCounter = isCounterTarget(targetName);
@@ -53,23 +48,34 @@ public class Shop extends Room {
             }
         }
 
-        // Handle Key on basement door interaction
         if (item instanceof Key) {
-            System.out.println("DEBUG - Item is Key");
             Key key = (Key) item;
-            boolean isBasementDoor = isBasementDoorTarget(targetName);
-            System.out.println("DEBUG - Is basement door target: " + isBasementDoor);
+            boolean isBasementDoor = false;
+            //System.out.println("DEBUG - Is basement door target: " + isBasementDoor);
             System.out.println("DEBUG - Key type: " + key.getKeyType());
 
-            if (isBasementDoor && ("Basement".equals(key.getKeyType()) || "basement".equalsIgnoreCase(key.getKeyType()))) {
-                System.out.println("DEBUG - Calling handleKeyOnBasementDoor");
-                handleKeyOnBasementDoor(game, player, key);
-                return true;
+            if ("Basement".equals(key.getKeyType())) {
+                isBasementDoor = isBasementDoorTarget(targetName);
+
+                if (isBasementDoor) {
+                    if (game.getStoryFlags().hasFlag("basement_unlocked")) {
+                        game.getGui().displayMessage("The basement door is already unlocked.");
+                        return true;
+                    }
+
+                    game.getGui().displayMessage("You insert the basement key into the large keyhole.");
+                    game.getGui().displayMessage("The key turns with a satisfying *click*!");
+
+                    player.removeItem(key);
+
+                    unlockBasement(game);
+                }
             }
+
         }
 
         System.out.println("DEBUG - No matching interaction found");
-        return false; // This room doesn't handle this interaction
+        return false;
     }
 
     private boolean isBasementDoorTarget(String targetName) {
@@ -79,23 +85,6 @@ public class Shop extends Room {
                 lower.contains("wooden door") ||
                 lower.contains("keyhole") ||
                 lower.contains("lock");
-    }
-
-    // Add method to handle key on basement door
-    private void handleKeyOnBasementDoor(Game game, Player player, Key key) {
-        if (game.getStoryFlags().hasFlag("basement_unlocked")) {
-            game.getGui().displayMessage("The basement door is already unlocked.");
-            return;
-        }
-
-        game.getGui().displayMessage("You insert the basement key into the large keyhole.");
-        game.getGui().displayMessage("The key turns with a satisfying *click*!");
-
-        // Remove the key from player's inventory
-        player.removeItem(key);
-
-        // Unlock the basement
-        unlockBasement(game);
     }
 
     private boolean isCounterTarget(String targetName) {
@@ -135,7 +124,7 @@ public class Shop extends Room {
         game.getStoryFlags().addFlag("opened_display_case");
 
         // FIXED: Add the item to THIS shop room, not just any current room
-        this.addItem(new rpg.items.GoldenRevolver());
+        this.addItem(new GoldenRevolver());
     }
 
     private void setupBasementConnection() {
@@ -149,13 +138,9 @@ public class Shop extends Room {
     private void initializeShopInventory() {
         shopInventory = new ArrayList<>();
 
-        // Add some basic shop items
         try {
-            // Create instances of items to sell
-            shopInventory.add(new ShopItem(new Bullet(), 10, 8, 4)); // 10 bullets, buy for 8, sell for 4
-            shopInventory.add(new ShopItem(new OldCoin(), 5, 15, 7)); // 5 coins, buy for 15, sell for 7
-
-            // Add more items as needed - you can expand this list
+            shopInventory.add(new ShopItem(new Bullet(), 10, 8, 4));
+            shopInventory.add(new ShopItem(new OldCoin(), 5, 15, 7));
         } catch (Exception e) {
             System.err.println("Error initializing shop inventory: " + e.getMessage());
         }
@@ -328,12 +313,10 @@ public class Shop extends Room {
         return super.hasConnection(direction);
     }
 
-    // Override displayConnections to show basement option
     @Override
     public void displayConnections(Game game) {
-        super.displayConnections(game); // Show normal connections first
+        super.displayConnections(game);
 
-        // Add basement connection info
         if (game.getStoryFlags().hasFlag("basement_unlocked")) {
             game.getGui().displayMessage("- down (to Shop Basement)");
         } else {
@@ -341,7 +324,6 @@ public class Shop extends Room {
         }
     }
 
-    // Method to check if player can access basement
     public boolean canAccessBasement(Game game) {
         if (game != null) {
             return game.getStoryFlags().hasFlag("basement_unlocked");
@@ -349,7 +331,6 @@ public class Shop extends Room {
         return false;
     }
 
-    // Method to unlock basement (called when player uses key)
     public void unlockBasement(Game game) {
         if (!game.getStoryFlags().hasFlag("basement_unlocked")) {
             game.getStoryFlags().addFlag("basement_unlocked");
@@ -359,64 +340,50 @@ public class Shop extends Room {
         }
     }
 
-    // Get the basement room (for room manager or other systems)
     public ShopBasement getBasement() {
         return basement;
     }
 
-    // FIXED: Updated attemptMove to properly handle basement access
     @Override
     public boolean attemptMove(String direction, Game game) {
         String lowerDirection = direction.toLowerCase();
 
-        // Check if trying to go to basement
         if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
             if (!canAccessBasement(game)) {
                 game.getGui().displayMessage("The basement door is locked. You need to find a way to unlock it first.");
                 game.getGui().displayMessage("The heavy wooden door has a large keyhole - maybe you need a key?");
-                return false; // Movement blocked
+                return false;
             }
         }
 
         return super.attemptMove(direction, game); // Call parent method for other directions
     }
 
-    // FIXED: Override getConnectedRoom to handle basement properly
     @Override
     public Room getConnectedRoom(String direction) {
         String lowerDirection = direction.toLowerCase();
 
-        // Check if trying to go to basement
         if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
-            // Return basement room regardless of unlock status
-            // The unlock check is handled in attemptMove/tryMove
             return basement;
         }
 
-        // For all other directions, use the parent implementation
         return super.getConnectedRoom(direction);
     }
 
-    // FIXED: Override tryMove to properly integrate with Room's movement system
     @Override
     public Room tryMove(String direction, Game game) {
         String lowerDirection = direction.toLowerCase();
 
-        // Check if trying to go to basement
         if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
-            // First check if movement is allowed
             if (!attemptMove(direction, game)) {
-                return null; // Movement blocked
+                return null;
             }
-            // If allowed, return the basement room
             return basement;
         }
 
-        // For all other directions, use the parent implementation
         return super.tryMove(direction, game);
     }
 
-    // All the existing shop methods remain the same
     public void displayShopInventory(Game game) {
         game.getGui().displayMessage("=== SHOP INVENTORY ===");
 
@@ -454,12 +421,10 @@ public class Shop extends Room {
         String searchTerm = StringUtils.safeTrim(itemName).toLowerCase();
 
         for (ShopItem shopItem : shopInventory) {
-            // Check if the item name matches using partial matching
             if (shopItem.getItem().getName().toLowerCase().contains(searchTerm)) {
                 return shopItem;
             }
 
-            // Check if the item matches search keywords
             if (shopItem.getItem().matchesSearch(searchTerm)) {
                 return shopItem;
             }
@@ -489,7 +454,6 @@ public class Shop extends Room {
         }
     }
 
-    // Method to add items to shop inventory when player sells them
     public void addToShopInventory(Item item, int quantity) {
         ShopItem existingShopItem = findShopItem(item.getName());
         if (existingShopItem != null && existingShopItem.canSell()) {
