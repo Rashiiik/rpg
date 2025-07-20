@@ -5,7 +5,6 @@ import rpg.commands.CommandParser;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
-import rpg.items.OldCoin;
 import rpg.items.Key;
 import rpg.utils.ItemSearchEngine;
 import rpg.utils.StringUtils;
@@ -38,7 +37,7 @@ public class UseCommand implements Command, CommandParser.EnhancedCommand {
 
     private void executeRegularUse(Game game, String[] args) {
         Player player = game.getPlayer();
-        String itemName = StringUtils.buildStringFromArgs(args);
+        String itemName = StringUtils.cleanInput(StringUtils.buildStringFromArgs(args));
 
         // Use centralized search engine
         Item item = ItemSearchEngine.findInInventory(player, itemName);
@@ -79,12 +78,11 @@ public class UseCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        String itemName = StringUtils.buildStringFromArgs(args, 0, onIndex);
-        String targetName = StringUtils.buildStringFromArgs(args, onIndex + 1, args.length);
+        String itemName = StringUtils.cleanInput(StringUtils.buildStringFromArgs(args, 0, onIndex));
+        String targetName = StringUtils.cleanInput(StringUtils.buildStringFromArgs(args, onIndex + 1, args.length));
 
         Player player = game.getPlayer();
 
-        // Use centralized search engine
         Item item = ItemSearchEngine.findInInventory(player, itemName);
 
         if (item == null) {
@@ -92,49 +90,18 @@ public class UseCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        // Handle Key interactions
         if (item instanceof Key) {
             Key key = (Key) item;
             key.useOn(player, targetName, game);
             return;
         }
 
-        // Handle specific puzzle interactions
-        if (item instanceof OldCoin && isCounterTarget(targetName)) {
-            handleCoinOnCounter(game, player, item);
-        } else {
-            game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
-        }
-    }
-
-    private boolean isCounterTarget(String targetName) {
-        return targetName.equalsIgnoreCase("counter") ||
-                targetName.equalsIgnoreCase("wooden counter") ||
-                targetName.equalsIgnoreCase("indentation") ||
-                targetName.equalsIgnoreCase("indent");
-    }
-
-    private void handleCoinOnCounter(Game game, Player player, Item coin) {
-        if (!game.getCurrentRoom().getName().equals("Item Shop")) {
-            game.getGui().displayMessage("There's no suitable counter here.");
+        if (game.getCurrentRoom().handleUseItemOn(game, player, item, targetName)) {
             return;
         }
 
-        if (game.getStoryFlags().hasFlag("opened_display_case")) {
-            game.getGui().displayMessage("The display case is already open.");
-            return;
-        }
-
-        // Execute the puzzle solution
-        game.getGui().displayMessage("You place the old coin into the circular indentation on the counter.");
-        game.getGui().displayMessage("The coin fits perfectly, and you hear a soft *click*.");
-        game.getGui().displayMessage("The glass display case opens silently, revealing its contents.");
-        game.getGui().displayMessage("A magnificent golden revolver with gleaming silver bullets is now accessible.");
-
-        // Remove the coin and set story flag
-        player.removeItem(coin);
-        game.getStoryFlags().addFlag("opened_display_case");
-        game.getCurrentRoom().addItem(new rpg.items.GoldenRevolver());
+        // If room doesn't handle it, show generic failure message
+        game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
     }
 
     @Override

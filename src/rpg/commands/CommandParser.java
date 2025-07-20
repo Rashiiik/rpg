@@ -40,7 +40,7 @@ public class CommandParser {
         addCommandGroup("stats", "stats", "stat", "status", "info");
         addCommandGroup("help", "help", "h", "?");
         addCommandGroup("use", "use", "u", "consume", "drink", "eat", "place", "insert", "put");
-        addCommandGroup("go", "go", "move", "walk", "head", "travel");
+        addCommandGroup("go", "go", "move", "walk", "head", "travel", "going");
         addCommandGroup("look", "look", "l", "see", "observe");
         addCommandGroup("buy", "buy", "purchase", "acquire");
         addCommandGroup("sell", "sell", "trade", "exchange");

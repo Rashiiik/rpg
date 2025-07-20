@@ -18,6 +18,21 @@ public class Key extends Item {
     }
 
     @Override
+    public void examine(Game game) {
+        if (keyType.equals("Basement")) {
+            game.getGui().displayMessage("This is an old iron key with intricate engravings along its shaft.");
+            game.getGui().displayMessage("The head of the key bears mystical symbols that seem to shift when you're not looking directly at them.");
+            game.getGui().displayMessage("It feels heavy for its size, as if it holds more than just the power to unlock doors.");
+            if (!game.getStoryFlags().hasFlag("basement_unlocked")) {
+                game.getGui().displayMessage("You sense this key is meant for something specific in the shop...");
+            }
+        } else {
+            game.getGui().displayMessage("An ordinary key, though it bears the craftsmanship of a skilled locksmith.");
+            game.getGui().displayMessage("The metal is slightly tarnished but still strong.");
+        }
+    }
+
+    @Override
     public void use(Player player) {
         // Get the game instance (you might need to pass this differently based on your architecture)
         Game game = player.getGame(); // Assuming Player has access to Game

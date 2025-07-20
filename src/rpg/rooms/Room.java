@@ -2,6 +2,7 @@ package rpg.rooms;
 
 import rpg.core.Game;
 import rpg.items.Item;
+import rpg.player.Player;
 import rpg.utils.ItemSearchEngine;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -117,4 +118,8 @@ public abstract class Room {
     // Getters
     public String getName() { return name; }
     public String getDescription() { return description; }
+
+    public boolean handleUseItemOn(Game game, Player player, Item item, String targetName) {
+        return false;
+    }
 }

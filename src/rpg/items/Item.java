@@ -1,5 +1,7 @@
 package rpg.items;
 
+import rpg.core.Game;
+
 public abstract class Item {
     protected String name;
     protected String description;
@@ -52,6 +54,12 @@ public abstract class Item {
         }
 
         return false;
+    }
+
+    // NEW METHOD: Detailed examination - can be overridden by subclasses
+    public void examine(Game game) {
+        // Default implementation does nothing
+        // Subclasses can override this to provide detailed examination info
     }
 
     // Setters

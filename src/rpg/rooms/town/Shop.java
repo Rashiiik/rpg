@@ -8,6 +8,7 @@ import rpg.items.Item;
 import rpg.items.Bullet;
 import rpg.shop.ShopItem;
 import rpg.utils.StringUtils;
+import rpg.player.Player;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,115 @@ public class Shop extends Room {
 
         initializeShopInventory();
         setupBasementConnection();
+    }
+
+    public boolean handleUseItemOn(Game game, Player player, Item item, String targetName) {
+        System.out.println("DEBUG - Shop.handleUseItemOn called");
+        System.out.println("DEBUG - Item: " + (item != null ? item.getClass().getSimpleName() + " - " + item.getName() : "null"));
+        System.out.println("DEBUG - Target: '" + targetName + "'");
+
+        // Add null checks for safety
+        if (game == null || player == null || item == null || targetName == null) {
+            System.out.println("DEBUG - Null parameter detected");
+            return false;
+        }
+
+        // Handle OldCoin on counter interaction
+        if (item instanceof OldCoin) {
+            System.out.println("DEBUG - Item is OldCoin");
+            boolean isCounter = isCounterTarget(targetName);
+            System.out.println("DEBUG - Is counter target: " + isCounter);
+
+            if (isCounter) {
+                System.out.println("DEBUG - Calling handleCoinOnCounter");
+                handleCoinOnCounter(game, player, item);
+                return true;
+            }
+        }
+
+        // Handle Key on basement door interaction
+        if (item instanceof Key) {
+            System.out.println("DEBUG - Item is Key");
+            Key key = (Key) item;
+            boolean isBasementDoor = isBasementDoorTarget(targetName);
+            System.out.println("DEBUG - Is basement door target: " + isBasementDoor);
+            System.out.println("DEBUG - Key type: " + key.getKeyType());
+
+            if (isBasementDoor && ("Basement".equals(key.getKeyType()) || "basement".equalsIgnoreCase(key.getKeyType()))) {
+                System.out.println("DEBUG - Calling handleKeyOnBasementDoor");
+                handleKeyOnBasementDoor(game, player, key);
+                return true;
+            }
+        }
+
+        System.out.println("DEBUG - No matching interaction found");
+        return false; // This room doesn't handle this interaction
+    }
+
+    private boolean isBasementDoorTarget(String targetName) {
+        String lower = targetName.toLowerCase();
+        return lower.contains("door") ||
+                lower.contains("basement") ||
+                lower.contains("wooden door") ||
+                lower.contains("keyhole") ||
+                lower.contains("lock");
+    }
+
+    // Add method to handle key on basement door
+    private void handleKeyOnBasementDoor(Game game, Player player, Key key) {
+        if (game.getStoryFlags().hasFlag("basement_unlocked")) {
+            game.getGui().displayMessage("The basement door is already unlocked.");
+            return;
+        }
+
+        game.getGui().displayMessage("You insert the basement key into the large keyhole.");
+        game.getGui().displayMessage("The key turns with a satisfying *click*!");
+
+        // Remove the key from player's inventory
+        player.removeItem(key);
+
+        // Unlock the basement
+        unlockBasement(game);
+    }
+
+    private boolean isCounterTarget(String targetName) {
+        if (targetName == null) {
+            System.out.println("DEBUG - isCounterTarget: targetName is null");
+            return false;
+        }
+
+        String lower = targetName.toLowerCase().trim();
+        System.out.println("DEBUG - isCounterTarget: checking '" + lower + "'");
+
+        boolean result = lower.equals("counter") ||
+                lower.equals("wooden counter") ||
+                lower.equals("indentation") ||
+                lower.equals("indent") ||
+                lower.equals("circular indentation") ||
+                (lower.contains("counter") && lower.contains("indentation"));
+
+        System.out.println("DEBUG - isCounterTarget result: " + result);
+        return result;
+    }
+
+    private void handleCoinOnCounter(Game game, Player player, Item coin) {
+        if (game.getStoryFlags().hasFlag("opened_display_case")) {
+            game.getGui().displayMessage("The display case is already open.");
+            return;
+        }
+
+        // Execute the puzzle solution
+        game.getGui().displayMessage("You place the old coin into the circular indentation on the counter.");
+        game.getGui().displayMessage("The coin fits perfectly, and you hear a soft *click*.");
+        game.getGui().displayMessage("The glass display case opens silently, revealing its contents.");
+        game.getGui().displayMessage("A magnificent golden revolver with gleaming silver bullets is now accessible.");
+
+        // Remove the coin and set story flag
+        player.removeItem(coin);
+        game.getStoryFlags().addFlag("opened_display_case");
+
+        // FIXED: Add the item to THIS shop room, not just any current room
+        this.addItem(new rpg.items.GoldenRevolver());
     }
 
     private void setupBasementConnection() {
@@ -106,6 +216,103 @@ public class Shop extends Room {
         // Show items in the room
         game.getGui().displayMessage("");
         displayItems(game);
+    }
+
+    // Add examination method for shop-specific items
+    public boolean handleExamine(Game game, String target) {
+        String lowerTarget = target.toLowerCase();
+
+        if (lowerTarget.contains("counter") || lowerTarget.contains("indentation") || lowerTarget.contains("indent")) {
+            examineCounter(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("display") || lowerTarget.contains("case") || lowerTarget.contains("glass")) {
+            examineDisplayCase(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("shopkeeper") || lowerTarget.contains("keeper") || lowerTarget.contains("merchant")) {
+            examineShopkeeper(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("shelf") || lowerTarget.contains("shelves")) {
+            examineShelves(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("window") || lowerTarget.contains("windows")) {
+            examineWindows(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("door") && (lowerTarget.contains("basement") || lowerTarget.contains("wooden") || lowerTarget.contains("iron"))) {
+            examineBasementDoor(game);
+            return true;
+        }
+
+        return false; // Not handled by shop
+    }
+
+    private void examineCounter(Game game) {
+        if (game.getStoryFlags().hasFlag("opened_display_case")) {
+            game.getGui().displayMessage("You run your fingers along the counter's surface.");
+            game.getGui().displayMessage("The circular indentation is perfectly smooth, as if the coin melted into it.");
+            game.getGui().displayMessage("You notice faint magical residue around the edges.");
+        } else {
+            game.getGui().displayMessage("You examine the counter closely.");
+            game.getGui().displayMessage("The circular indentation is precisely carved - definitely not natural wear.");
+            game.getGui().displayMessage("Running your finger around its edge, you feel a faint magical tingle.");
+            game.getGui().displayMessage("This was made to hold something specific...");
+        }
+    }
+
+    private void examineDisplayCase(Game game) {
+        if (game.getStoryFlags().hasFlag("opened_display_case")) {
+            game.getGui().displayMessage("The display case's glass is crystal clear, without a single fingerprint.");
+            game.getGui().displayMessage("The opening mechanism is completely hidden - no hinges or locks visible.");
+            game.getGui().displayMessage("Whatever magic opened this, it's beyond your understanding.");
+        } else {
+            game.getGui().displayMessage("You press your face close to the glass.");
+            game.getGui().displayMessage("Inside, you can make out the shape of a magical compass.");
+            game.getGui().displayMessage("The glass itself seems to shimmer with protective enchantments.");
+            game.getGui().displayMessage("No amount of force would break this - it needs to be opened properly.");
+        }
+    }
+
+    private void examineShopkeeper(Game game) {
+        game.getGui().displayMessage("You study the shopkeeper carefully.");
+        game.getGui().displayMessage("Their eyes hold ancient wisdom, far older than their appearance suggests.");
+        game.getGui().displayMessage("Small scars on their hands tell of a life beyond shopkeeping.");
+        game.getGui().displayMessage("When they think you're not looking, they glance meaningfully at the display case.");
+    }
+
+    private void examineShelves(Game game) {
+        game.getGui().displayMessage("You examine the shelves more closely.");
+        game.getGui().displayMessage("Everything is organized by more than just type - there's a pattern here.");
+        game.getGui().displayMessage("Magical items are subtly separated from mundane ones.");
+        game.getGui().displayMessage("Some items seem to be placed deliberately to hide others behind them.");
+    }
+
+    private void examineWindows(Game game) {
+        game.getGui().displayMessage("You peer through the grimy windows.");
+        game.getGui().displayMessage("The dirt seems intentionally placed to obscure the view.");
+        game.getGui().displayMessage("You can just make out shadowy figures moving in the street outside.");
+        game.getGui().displayMessage("This shop exists in a place between worlds...");
+    }
+
+    private void examineBasementDoor(Game game) {
+        if (game.getStoryFlags().hasFlag("basement_unlocked")) {
+            game.getGui().displayMessage("The heavy wooden door stands open, revealing stone steps descending into darkness.");
+            game.getGui().displayMessage("The iron bands are purely decorative - the real security was the lock.");
+            game.getGui().displayMessage("A cool breeze carries the scent of old stone and mysterious herbs from below.");
+        } else {
+            game.getGui().displayMessage("You examine the basement door closely.");
+            game.getGui().displayMessage("The wood is thick and sturdy, reinforced with iron bands.");
+            game.getGui().displayMessage("The large keyhole is ornately decorated with mystical symbols.");
+            game.getGui().displayMessage("You can hear faint sounds from below - this basement is not empty.");
+        }
     }
 
     // Override hasConnection to include basement
