@@ -22,7 +22,6 @@ public abstract class Room {
         this.items = new ArrayList<>();
     }
 
-    // Item management methods using ItemSearchEngine
     public void addItem(Item item) {
         items.add(item);
     }
@@ -60,11 +59,9 @@ public abstract class Room {
         }
     }
 
-    // Abstract methods that subclasses must implement
     public abstract void enter(Game game);
     public abstract void look(Game game);
 
-    // Connection management
     public void addConnection(String direction, Room room) {
         connections.put(direction.toLowerCase(), room);
     }
@@ -85,20 +82,15 @@ public abstract class Room {
         return connections.containsKey(direction.toLowerCase());
     }
 
-    // Method that rooms can override to block movement
     public boolean attemptMove(String direction, Game game) {
-        // By default, all movement is allowed
         return true;
     }
 
-    // Method to check if movement is possible and get the destination room
     public Room tryMove(String direction, Game game) {
-        // First check if the room allows this movement
         if (!attemptMove(direction, game)) {
-            return null; // Movement blocked by room-specific logic
+            return null;
         }
 
-        // If movement is allowed, get the connected room
         return getConnectedRoom(direction);
     }
 

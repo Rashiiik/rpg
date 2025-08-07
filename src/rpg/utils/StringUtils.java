@@ -50,10 +50,6 @@ public class StringUtils {
         }
     }
 
-    /**
-     * Remove common articles (the, a, an) from the beginning of a string.
-     * Useful for parsing user input where articles might be included.
-     */
     public static String removeArticles(String input) {
         if (input == null || input.trim().isEmpty()) {
             return input;
@@ -74,9 +70,6 @@ public class StringUtils {
         return trimmed;
     }
 
-    /**
-     * Clean input string by removing articles and extra whitespace
-     */
     public static String cleanInput(String input) {
         return removeArticles(safeTrim(input));
     }

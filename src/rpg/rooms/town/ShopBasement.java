@@ -53,7 +53,6 @@ public class ShopBasement extends Room {
         game.getGui().displayMessage("");
         displayConnections(game);
 
-        // Show items in the basement
         game.getGui().displayMessage("");
         displayItems(game);
     }

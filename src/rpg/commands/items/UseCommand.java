@@ -3,13 +3,30 @@ package rpg.commands.items;
 import rpg.commands.Command;
 import rpg.commands.CommandParser;
 import rpg.core.Game;
+import rpg.items.OldCoin;
 import rpg.player.Player;
 import rpg.items.Item;
 import rpg.items.Key;
+import rpg.rooms.Room;
 import rpg.utils.ItemSearchEngine;
 import rpg.utils.StringUtils;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class UseCommand implements Command, CommandParser.EnhancedCommand {
+
+    private static final Set<String> CONNECTION_WORDS = new HashSet<>(Arrays.asList(
+            "on", "with", "into", "in", "against", "to", "at", "upon", "onto"
+    ));
+
+    private static final Set<String> UNLOCK_ACTIONS = new HashSet<>(Arrays.asList(
+            "unlock", "open", "insert", "put", "place"
+    ));
+
+    private static final Set<String> UNLOCK_TARGETS = new HashSet<>(Arrays.asList(
+            "door", "chest", "gate", "lock", "basement", "entrance", "exit"
+    ));
 
     @Override
     public void execute(Game game, String[] args) {
@@ -24,26 +41,70 @@ public class UseCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        // Check if this is a "use X on Y" command
-        int onIndex = StringUtils.findKeywordIndex(originalArgs, "on");
-        if (onIndex != -1) {
-            executeUseOn(game, originalArgs, onIndex);
-            return;
-        }
+        UsagePattern pattern = analyzeUsagePattern(originalArgs);
 
-        // Regular use command logic
-        executeRegularUse(game, originalArgs);
+        switch (pattern.type) {
+            case USE_ON:
+                executeUseOn(game, originalArgs, filteredArgs, pattern.connectionIndex);
+                break;
+            case UNLOCK_TARGET:
+                executeUnlockTarget(game, originalArgs, filteredArgs, pattern);
+                break;
+            case UNLOCK_WITH:
+                executeUnlockWith(game, originalArgs, filteredArgs, pattern);
+                break;
+            case REGULAR_USE:
+            default:
+                executeRegularUse(game, originalArgs, filteredArgs);
+                break;
+        }
     }
 
-    private void executeRegularUse(Game game, String[] args) {
-        Player player = game.getPlayer();
-        String itemName = StringUtils.cleanInput(StringUtils.buildStringFromArgs(args));
+    private UsagePattern analyzeUsagePattern(String[] args) {
+        String input = String.join(" ", args).toLowerCase();
 
-        // Use centralized search engine
-        Item item = ItemSearchEngine.findInInventory(player, itemName);
+        for (int i = 0; i < args.length; i++) {
+            if (CONNECTION_WORDS.contains(args[i].toLowerCase())) {
+                return new UsagePattern(PatternType.USE_ON, i);
+            }
+        }
+
+        boolean hasUnlockAction = false;
+        boolean hasUnlockTarget = false;
+
+        for (String arg : args) {
+            String lowerArg = arg.toLowerCase();
+            if (UNLOCK_ACTIONS.contains(lowerArg)) {
+                hasUnlockAction = true;
+            }
+            if (UNLOCK_TARGETS.contains(lowerArg)) {
+                hasUnlockTarget = true;
+            }
+        }
+
+        if (hasUnlockAction && hasUnlockTarget) {
+            return new UsagePattern(PatternType.UNLOCK_TARGET, -1);
+        }
+
+        if (hasUnlockTarget && !hasUnlockAction) {
+            return new UsagePattern(PatternType.UNLOCK_TARGET, -1);
+        }
+
+        return new UsagePattern(PatternType.REGULAR_USE, -1);
+    }
+
+    private void executeRegularUse(Game game, String[] originalArgs, String[] filteredArgs) {
+        Player player = game.getPlayer();
+
+        Item item = ItemSearchEngine.findInInventoryProgressive(
+                player,
+                StringUtils.buildStringFromArgs(originalArgs),
+                StringUtils.buildStringFromArgs(filteredArgs)
+        );
 
         if (item == null) {
-            game.getGui().displayMessage("You don't have an item called '" + itemName + "'.");
+            String searchTerm = StringUtils.buildStringFromArgs(originalArgs);
+            game.getGui().displayMessage("You don't have an item called '" + searchTerm + "'.");
             return;
         }
 
@@ -67,62 +128,174 @@ public class UseCommand implements Command, CommandParser.EnhancedCommand {
         }
     }
 
-    private void executeUseOn(Game game, String[] args, int onIndex) {
+    private void executeUseOn(Game game, String[] originalArgs, String[] filteredArgs, int onIndex) {
         if (onIndex == 0) {
             game.getGui().displayMessage("You need to specify an item to use.");
             return;
         }
 
-        if (onIndex == args.length - 1) {
-            game.getGui().displayMessage("You need to specify a target after 'on'.");
+        if (onIndex == originalArgs.length - 1) {
+            game.getGui().displayMessage("You need to specify a target after '" + originalArgs[onIndex] + "'.");
             return;
         }
 
-        String itemName = StringUtils.cleanInput(StringUtils.buildStringFromArgs(args, 0, onIndex));
-        String targetName = StringUtils.cleanInput(StringUtils.buildStringFromArgs(args, onIndex + 1, args.length));
+        int filteredOnIndex = findConnectionWordIndex(filteredArgs);
 
+        String originalItemName = StringUtils.buildStringFromArgs(originalArgs, 0, onIndex);
+        String filteredItemName = (filteredOnIndex != -1) ?
+                StringUtils.buildStringFromArgs(filteredArgs, 0, filteredOnIndex) :
+                StringUtils.buildStringFromArgs(filteredArgs, 0, Math.min(filteredArgs.length, onIndex));
+
+        String originalTargetName = StringUtils.buildStringFromArgs(originalArgs, onIndex + 1, originalArgs.length);
+        String filteredTargetName = (filteredOnIndex != -1 && filteredOnIndex < filteredArgs.length - 1) ?
+                StringUtils.buildStringFromArgs(filteredArgs, filteredOnIndex + 1, filteredArgs.length) :
+                originalTargetName;
+
+        executeItemOnTarget(game, originalItemName, filteredItemName, originalTargetName, filteredTargetName);
+    }
+
+    private void executeUnlockTarget(Game game, String[] originalArgs, String[] filteredArgs, UsagePattern pattern) {
         Player player = game.getPlayer();
 
-        Item item = ItemSearchEngine.findInInventory(player, itemName);
+        String target = extractUnlockTarget(originalArgs);
+        if (target == null) {
+            game.getGui().displayMessage("What do you want to unlock?");
+            return;
+        }
+
+        Key bestKey = findBestKeyForTarget(player, target);
+
+        if (bestKey == null) {
+            game.getGui().displayMessage("You don't have a suitable key to unlock " + target + ".");
+            return;
+        }
+
+        handleKeyUsage(game, player, bestKey, target, target.toLowerCase());
+    }
+
+    private void executeUnlockWith(Game game, String[] originalArgs, String[] filteredArgs, UsagePattern pattern) {
+        int withIndex = StringUtils.findKeywordIndex(originalArgs, "with");
+        if (withIndex != -1) {
+            executeUseOn(game, originalArgs, filteredArgs, withIndex);
+        }
+    }
+
+    private void executeItemOnTarget(Game game, String originalItemName, String filteredItemName,
+                                     String originalTargetName, String filteredTargetName) {
+        Player player = game.getPlayer();
+
+        Item item = ItemSearchEngine.findInInventoryProgressive(player, originalItemName, filteredItemName);
 
         if (item == null) {
-            game.getGui().displayMessage("You don't have an item called '" + itemName + "'.");
+            game.getGui().displayMessage("You don't have an item called '" + originalItemName + "'.");
             return;
         }
 
-        // DEBUG: Add some debug output
-        System.out.println("DEBUG - UseCommand.executeUseOn:");
-        System.out.println("  Item: " + item.getName() + " (" + item.getClass().getSimpleName() + ")");
-        System.out.println("  Target: '" + targetName + "'");
-        System.out.println("  Current Room: " + game.getCurrentRoom().getClass().getSimpleName());
-
-        // FIXED: First try to let the current room handle the interaction
-        boolean handled = game.getCurrentRoom().handleUseItemOn(game, player, item, targetName);
-        System.out.println("  Room handled: " + handled);
-
-        if (handled) {
-            return; // Room successfully handled the interaction
-        }
-
-        // FALLBACK: If room doesn't handle it, try the item's built-in behavior
         if (item instanceof Key) {
             Key key = (Key) item;
-            key.useOn(player, targetName, game);
+            handleKeyUsage(game, player, key, originalTargetName, filteredTargetName);
             return;
         }
 
-        // If nothing handles it, show generic failure message
-        game.getGui().displayMessage("You can't use the " + itemName + " on " + targetName + ".");
+        if (item instanceof OldCoin) {
+            OldCoin coin = (OldCoin) item;
+            coin.useOn(player, filteredTargetName, game);
+            return;
+        }
+
+        game.getGui().displayMessage("You can't use the " + item.getName() + " on " + originalTargetName + ".");
         game.getGui().displayMessage("Maybe you're not in the right location, or this combination doesn't work.");
+    }
+
+    private String extractUnlockTarget(String[] args) {
+        for (String arg : args) {
+            String lowerArg = arg.toLowerCase();
+            if (UNLOCK_TARGETS.contains(lowerArg)) {
+                return arg;
+            }
+        }
+
+        StringBuilder target = new StringBuilder();
+        for (String arg : args) {
+            if (!UNLOCK_ACTIONS.contains(arg.toLowerCase())) {
+                if (target.length() > 0) target.append(" ");
+                target.append(arg);
+            }
+        }
+
+        return target.length() > 0 ? target.toString() : null;
+    }
+
+    private Key findBestKeyForTarget(Player player, String target) {
+        for (Item item : player.getInventory().getItems()) {
+            if (item instanceof Key) {
+                Key key = (Key) item;
+                return key;
+            }
+        }
+        return null;
+    }
+
+    private int findConnectionWordIndex(String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            if (CONNECTION_WORDS.contains(args[i].toLowerCase())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void handleKeyUsage(Game game, Player player, Key key, String originalTargetName, String filteredTargetName) {
+        Room currentRoom = game.getCurrentRoom();
+
+        if (currentRoom != null) {
+            boolean handled = currentRoom.handleUseItemOn(game, player, key, filteredTargetName);
+
+            if (handled) {
+                return;
+            }
+
+            if (!originalTargetName.equals(filteredTargetName)) {
+                handled = currentRoom.handleUseItemOn(game, player, key, originalTargetName);
+
+                if (handled) {
+                    return;
+                }
+            }
+        }
+
+        try {
+            key.useOn(player, filteredTargetName, game);
+        } catch (Exception e) {
+            System.err.println("Error using key: " + e.getMessage());
+            game.getGui().displayMessage("The " + key.getName() + " doesn't seem to work on " + originalTargetName + ".");
+        }
     }
 
     @Override
     public String getHelpText() {
-        return "Use an item from your inventory, or use an item on a target";
+        return "Use an item from your inventory, or use an item on a target (including unlocking with keys)";
     }
 
     @Override
     public String[] getAliases() {
-        return new String[]{"u", "consume", "drink", "eat", "place", "insert", "put"};
+        return new String[]{"u", "consume", "drink", "eat", "place", "insert", "put", "unlock", "open"};
+    }
+
+    private static class UsagePattern {
+        final PatternType type;
+        final int connectionIndex;
+
+        UsagePattern(PatternType type, int connectionIndex) {
+            this.type = type;
+            this.connectionIndex = connectionIndex;
+        }
+    }
+
+    private enum PatternType {
+        REGULAR_USE,
+        USE_ON,
+        UNLOCK_TARGET,
+        UNLOCK_WITH
     }
 }

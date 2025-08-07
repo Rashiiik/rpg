@@ -13,7 +13,6 @@ public class Shop extends Room {
     private List<ShopItem> shopInventory;
     private ShopBasement basement;
 
-
     public Shop() {
         super("Item Shop", "Tucked away in a fog-drenched alley of the Backlund docks—where gas lamps flicker and shadows stretch with minds of their own—stands a narrow, leaning storefront with windows dulled by age and secrets.");
 
@@ -27,22 +26,16 @@ public class Shop extends Room {
     }
 
     public boolean handleUseItemOn(Game game, Player player, Item item, String targetName) {
-        System.out.println("DEBUG - Shop.handleUseItemOn called");
-        System.out.println("DEBUG - Item: " + (item != null ? item.getClass().getSimpleName() + " - " + item.getName() : "null"));
-        System.out.println("DEBUG - Target: '" + targetName + "'");
 
         if (game == null || player == null || item == null || targetName == null) {
-            System.out.println("DEBUG - Null parameter detected");
             return false;
         }
 
         if (item instanceof OldCoin) {
-            System.out.println("DEBUG - Item is OldCoin");
+
             boolean isCounter = isCounterTarget(targetName);
-            System.out.println("DEBUG - Is counter target: " + isCounter);
 
             if (isCounter) {
-                System.out.println("DEBUG - Calling handleCoinOnCounter");
                 handleCoinOnCounter(game, player, item);
                 return true;
             }
@@ -50,12 +43,9 @@ public class Shop extends Room {
 
         if (item instanceof Key) {
             Key key = (Key) item;
-            boolean isBasementDoor = false;
-            //System.out.println("DEBUG - Is basement door target: " + isBasementDoor);
-            System.out.println("DEBUG - Key type: " + key.getKeyType());
 
             if ("Basement".equals(key.getKeyType())) {
-                isBasementDoor = isBasementDoorTarget(targetName);
+                boolean isBasementDoor = isBasementDoorTarget(targetName);
 
                 if (isBasementDoor) {
                     if (game.getStoryFlags().hasFlag("basement_unlocked")) {
@@ -74,7 +64,6 @@ public class Shop extends Room {
 
         }
 
-        System.out.println("DEBUG - No matching interaction found");
         return false;
     }
 
@@ -89,12 +78,10 @@ public class Shop extends Room {
 
     private boolean isCounterTarget(String targetName) {
         if (targetName == null) {
-            System.out.println("DEBUG - isCounterTarget: targetName is null");
             return false;
         }
 
         String lower = targetName.toLowerCase().trim();
-        System.out.println("DEBUG - isCounterTarget: checking '" + lower + "'");
 
         boolean result = lower.equals("counter") ||
                 lower.equals("wooden counter") ||
@@ -103,7 +90,6 @@ public class Shop extends Room {
                 lower.equals("circular indentation") ||
                 (lower.contains("counter") && lower.contains("indentation"));
 
-        System.out.println("DEBUG - isCounterTarget result: " + result);
         return result;
     }
 
@@ -113,22 +99,18 @@ public class Shop extends Room {
             return;
         }
 
-        // Execute the puzzle solution
         game.getGui().displayMessage("You place the old coin into the circular indentation on the counter.");
         game.getGui().displayMessage("The coin fits perfectly, and you hear a soft *click*.");
         game.getGui().displayMessage("The glass display case opens silently, revealing its contents.");
         game.getGui().displayMessage("A magnificent golden revolver with gleaming silver bullets is now accessible.");
 
-        // Remove the coin and set story flag
         player.removeItem(coin);
         game.getStoryFlags().addFlag("opened_display_case");
 
-        // FIXED: Add the item to THIS shop room, not just any current room
         this.addItem(new GoldenRevolver());
     }
 
     private void setupBasementConnection() {
-        // The basement connection back to shop
         basement.addConnection("up", this);
         basement.addConnection("upstairs", this);
         basement.addConnection("shop", this);
@@ -171,7 +153,6 @@ public class Shop extends Room {
         game.getGui().displayMessage("- Clothes");
         game.getGui().displayMessage("- Various tools and supplies");
 
-        // Add puzzle elements description
         game.getGui().displayMessage("");
         game.getGui().displayMessage("Behind the counter, you notice:");
         if (game.getStoryFlags().hasFlag("opened_display_case")) {
@@ -182,7 +163,6 @@ public class Shop extends Room {
             game.getGui().displayMessage("- A worn wooden counter");
         }
 
-        // Basement door description
         game.getGui().displayMessage("");
         game.getGui().displayMessage("In the corner, you see:");
         if (game.getStoryFlags().hasFlag("basement_unlocked")) {
@@ -198,12 +178,10 @@ public class Shop extends Room {
         game.getGui().displayMessage("");
         displayConnections(game);
 
-        // Show items in the room
         game.getGui().displayMessage("");
         displayItems(game);
     }
 
-    // Add examination method for shop-specific items
     public boolean handleExamine(Game game, String target) {
         String lowerTarget = target.toLowerCase();
 
@@ -237,7 +215,7 @@ public class Shop extends Room {
             return true;
         }
 
-        return false; // Not handled by shop
+        return false;
     }
 
     private void examineCounter(Game game) {
@@ -300,12 +278,10 @@ public class Shop extends Room {
         }
     }
 
-    // Override hasConnection to include basement
     @Override
     public boolean hasConnection(String direction) {
         String lowerDirection = direction.toLowerCase();
 
-        // Check if trying to go to basement
         if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
             return true;
         }
@@ -356,7 +332,7 @@ public class Shop extends Room {
             }
         }
 
-        return super.attemptMove(direction, game); // Call parent method for other directions
+        return super.attemptMove(direction, game);
     }
 
     @Override
@@ -375,7 +351,9 @@ public class Shop extends Room {
         String lowerDirection = direction.toLowerCase();
 
         if (lowerDirection.equals("down") || lowerDirection.equals("basement") || lowerDirection.equals("downstairs")) {
-            if (!attemptMove(direction, game)) {
+            if (!canAccessBasement(game)) {
+                game.getGui().displayMessage("The basement door is locked. You need to find a way to unlock it first.");
+                game.getGui().displayMessage("The heavy wooden door has a large keyhole - maybe you need a key?");
                 return null;
             }
             return basement;
@@ -459,7 +437,6 @@ public class Shop extends Room {
         if (existingShopItem != null && existingShopItem.canSell()) {
             existingShopItem.addStock(quantity);
         } else {
-            // Create a new shop item for this sold item
             ShopItem newShopItem = new ShopItem(item, quantity);
             shopInventory.add(newShopItem);
         }

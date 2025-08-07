@@ -56,29 +56,24 @@ public class Key extends Item {
     }
 
     public void useOn(Player player, String target, Game game) {
-        // FIXED: Use Game.getCurrentRoom() instead of RoomManager.getCurrentRoom()
         Room currentRoom = game.getCurrentRoom();
         boolean handled = false;
 
-        // First, try to let the current room handle the interaction
         if (currentRoom != null) {
             try {
-                // Use reflection to find and call the handleUseItemOn method
                 Method method = findHandleUseItemOnMethod(currentRoom.getClass());
                 if (method != null) {
                     Object result = method.invoke(currentRoom, game, player, this, target);
                     if (result instanceof Boolean && (Boolean) result) {
                         handled = true;
-                        return; // Room handled it successfully
+                        return;
                     }
                 }
             } catch (Exception e) {
-                System.err.println("Error calling room's handleUseItemOn: " + e.getMessage());
-                e.printStackTrace(); // Add stack trace for debugging
+                e.printStackTrace();
             }
         }
 
-        // If room didn't handle it, try key-specific logic
         if (!handled) {
             handleKeySpecificLogic(player, target, game, currentRoom);
         }
@@ -91,15 +86,14 @@ public class Key extends Item {
             try {
                 Method method = currentClass.getDeclaredMethod("handleUseItemOn",
                         Game.class, Player.class, Item.class, String.class);
-                method.setAccessible(true); // Make accessible if it's not public
+                method.setAccessible(true);
                 return method;
             } catch (NoSuchMethodException e) {
-                // Method not found in this class, try superclass
                 currentClass = currentClass.getSuperclass();
             }
         }
 
-        return null; // Method not found in class hierarchy
+        return null;
     }
 
     private void handleKeySpecificLogic(Player player, String target, Game game, Room currentRoom) {
@@ -110,14 +104,12 @@ public class Key extends Item {
         } else if (keyType.equals("Tutorial")) {
             handleTutorialKey(player, target, lowerTarget, game, currentRoom);
         } else {
-            // Generic key behavior
             game.getGui().displayMessage("You try to use the " + getName() + " on " + target + ".");
             game.getGui().displayMessage("The key doesn't seem to work here. Try moving to the right location.");
         }
     }
 
     private void handleBasementKey(Player player, String target, String lowerTarget, Game game, Room currentRoom) {
-        // Check if we're in a shop and trying to unlock basement-related targets
         if (currentRoom instanceof Shop) {
             Shop shop = (Shop) currentRoom;
 
@@ -130,17 +122,14 @@ public class Key extends Item {
                     game.getGui().displayMessage("You insert the basement key into the large keyhole.");
                     game.getGui().displayMessage("The key turns with a satisfying *click*!");
 
-                    // Remove the key from player's inventory
                     player.removeItem(this);
 
-                    // Unlock the basement
                     shop.unlockBasement(game);
                 }
                 return;
             }
         }
 
-        // If not in shop or wrong target
         game.getGui().displayMessage("You try to use the " + getName() + " on " + target + ".");
         if (!(currentRoom instanceof Shop)) {
             game.getGui().displayMessage("This basement key doesn't seem to belong here. Maybe try it in a shop?");

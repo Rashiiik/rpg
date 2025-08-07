@@ -4,10 +4,7 @@ import rpg.items.Item;
 import rpg.player.Player;
 import rpg.rooms.Room;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 
 public class ItemSearchEngine {
 
@@ -18,23 +15,18 @@ public class ItemSearchEngine {
 
         String cleanTerm = StringUtils.safeTrim(searchTerm).toLowerCase();
 
-        // Strategy 1: Exact name match
         T result = findByExactName(items, cleanTerm);
         if (result != null) return result;
 
-        // Strategy 2: Partial name matching
         result = findByPartialName(items, cleanTerm);
         if (result != null) return result;
 
-        // Strategy 3: Word-by-word matching
         result = findByWordMatching(items, cleanTerm);
         if (result != null) return result;
 
-        // Strategy 4: Item's own matching method
         result = findByItemMatcher(items, cleanTerm);
         if (result != null) return result;
 
-        // Strategy 5: Try with filtered search term
         String filteredTerm = filterSearchTerm(cleanTerm);
         if (!filteredTerm.equals(cleanTerm)) {
             return findItem(items, filteredTerm);
@@ -44,17 +36,14 @@ public class ItemSearchEngine {
     }
 
     public static <T extends Item> T findItemProgressive(List<T> items, String originalTerm, String filteredTerm) {
-        // Try original term first
         T result = findItem(items, originalTerm);
         if (result != null) return result;
 
-        // Try filtered term if different
         if (!StringUtils.isNullOrEmpty(filteredTerm) && !filteredTerm.equals(originalTerm)) {
             result = findItem(items, filteredTerm);
             if (result != null) return result;
         }
 
-        // Try progressive word removal
         return findWithWordRemoval(items, originalTerm);
     }
 
@@ -74,7 +63,6 @@ public class ItemSearchEngine {
         return findItemProgressive(room.getItems(), originalTerm, filteredTerm);
     }
 
-    // Private helper methods
     private static <T extends Item> T findByExactName(List<T> items, String searchTerm) {
         for (T item : items) {
             if (item.getName().toLowerCase().equals(searchTerm)) {
@@ -103,7 +91,6 @@ public class ItemSearchEngine {
             }
         }
 
-        // Fallback: try single word matching
         for (String searchWord : searchWords) {
             if (searchWord.length() > 2) { // Skip very short words
                 for (T item : items) {
@@ -135,7 +122,6 @@ public class ItemSearchEngine {
             return null;
         }
 
-        // Try removing words from the beginning
         for (int i = 1; i < words.length; i++) {
             String partialTerm = String.join(" ", Arrays.copyOfRange(words, i, words.length));
             T result = findItem(items, partialTerm);
@@ -170,9 +156,6 @@ public class ItemSearchEngine {
         return true;
     }
 
-    /**
-     * Filter out filler words from search term
-     */
     public static String filterSearchTerm(String searchTerm) {
         if (StringUtils.isNullOrEmpty(searchTerm)) {
             return "";
@@ -182,11 +165,5 @@ public class ItemSearchEngine {
         StringBuilder filtered = new StringBuilder();
 
         return filtered.toString();
-    }
-
-    public static String[] createSearchTerms(String[] args) {
-        String original = String.join(" ", args);
-        String filtered = filterSearchTerm(original);
-        return new String[]{original, filtered};
     }
 }

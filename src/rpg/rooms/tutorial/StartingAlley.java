@@ -58,7 +58,7 @@ public class StartingAlley extends Room {
         }
 
         game.getGui().displayMessage("");
-        game.getGui().displayMessage("Ahead, a mound of trash smolders, twitching with flies.");
+        game.getGui().displayMessage("Ahead, a mound of trash smolders, twitching with flies. There maybe an object of interest here.");
         game.getGui().displayMessage("");
 
         if (!sigilExamined) {
@@ -81,9 +81,13 @@ public class StartingAlley extends Room {
         displayItems(game);
 
         displayConnections(game);
+
+        if (!game.getStoryFlags().hasFlag("sigil_examined")) {
+            game.getGui().displayMessage("");
+            game.getGui().displayMessage("Type 'examine sigil'");
+        }
     }
 
-    // Handle examination of specific objects
     public boolean handleExamine(Game game, String target) {
         String lowerTarget = target.toLowerCase().trim();
 
@@ -337,7 +341,6 @@ public class StartingAlley extends Room {
                 return null;
             }
 
-            // Special transition message when leaving the alley
             game.getGui().displayMessage("You step through the iron doorway, leaving the fog-shrouded alley behind.");
             game.getGui().displayMessage("As you cross the threshold, you hear the door clang shut.");
             game.getGui().displayMessage("");
@@ -348,7 +351,6 @@ public class StartingAlley extends Room {
             game.getGui().displayMessage("");
             game.getGui().displayMessage("Welcome to your new world.");
 
-            // Get the town room from the room manager
             Room townSquare = game.getRoomManager().getRoom("town");
             return townSquare;
         }

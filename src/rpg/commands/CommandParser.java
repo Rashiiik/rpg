@@ -2,7 +2,6 @@ package rpg.commands;
 
 import rpg.commands.general.ExamineCommand;
 import rpg.commands.items.TakeCommand;
-import rpg.commands.items.UnlockCommand;
 import rpg.commands.shop.BuyCommand;
 import rpg.commands.shop.SellCommand;
 import rpg.core.Game;
@@ -11,6 +10,7 @@ import rpg.commands.general.StatsCommand;
 import rpg.commands.movement.LookCommand;
 import rpg.commands.movement.GoCommand;
 import rpg.commands.items.InventoryCommand;
+import rpg.commands.games.PlayCommand;
 import rpg.commands.items.UseCommand;
 import rpg.utils.StringUtils;
 import java.util.HashMap;
@@ -27,24 +27,18 @@ public class CommandParser {
 
     private static final Map<String, String> ALL_COMMAND_WORDS = new HashMap<>();
 
-    // Static initializer to reduce duplication
-    static {
-        initializeCommandMappings();
-    }
-
     private static void initializeCommandMappings() {
-        // Define command groups to reduce duplication
         addCommandGroup("take", "take", "get", "grab", "pickup", "pick");
-        addCommandGroup("examine", "examine", "inspect", "study", "check", "ex");
+        addCommandGroup("examine", "examine", "inspect", "study", "check", "ex", "rummage", "search");
         addCommandGroup("inventory", "inventory", "inv", "bag");
         addCommandGroup("stats", "stats", "stat", "status", "info");
         addCommandGroup("help", "help", "h", "?");
-        addCommandGroup("use", "use", "u", "consume", "drink", "eat", "place", "insert", "put");
+        addCommandGroup("use", "use", "u", "consume", "drink", "eat", "place", "insert", "put", "unlock", "open");
         addCommandGroup("go", "go", "move", "walk", "head", "travel", "going");
         addCommandGroup("look", "look", "l", "see", "observe");
         addCommandGroup("buy", "buy", "purchase", "acquire");
         addCommandGroup("sell", "sell", "trade", "exchange");
-        addCommandGroup("unlock", "unlock", "open"); // Added unlock command
+        addCommandGroup("play", "play", "game", "games");
     }
 
     private static void addCommandGroup(String mainCommand, String... aliases) {
@@ -70,19 +64,20 @@ public class CommandParser {
             "rock", "stone", "wall", "floor", "ceiling", "window", "chair",
             "bed", "barrel", "crate", "box", "lever", "button", "switch",
             "revolver", "pistol", "gun", "weapon", "knife", "blade", "axe",
-            "basement", "downstairs" // Added basement-related words
+            "basement", "downstairs", "blackjack"
     ));
 
     private static final Set<String> IMPORTANT_PREPOSITIONS = new HashSet<>(Arrays.asList(
             "on", "in", "into", "onto", "upon", "against", "over", "under",
             "behind", "beside", "near", "inside", "outside", "through", "across",
-            "with" // Added "with" for "unlock X with Y" commands
+            "with"
     ));
 
     public CommandParser(Game game) {
         this.game = game;
         this.commands = new HashMap<>();
         initializeCommands();
+        initializeCommandMappings();
     }
 
     private void initializeCommands() {
@@ -96,13 +91,12 @@ public class CommandParser {
         registerCommand("examine", new ExamineCommand());
         registerCommand("buy", new BuyCommand());
         registerCommand("sell", new SellCommand());
-        registerCommand("unlock", new UnlockCommand()); // Added unlock command
+        registerCommand("play", new PlayCommand());  
     }
 
     private void registerCommand(String name, Command command) {
         commands.put(name.toLowerCase(), command);
 
-        // Register aliases
         for (String alias : command.getAliases()) {
             commands.put(alias.toLowerCase(), command);
         }
@@ -118,7 +112,6 @@ public class CommandParser {
             return;
         }
 
-        // Special case for single "I" -> inventory
         if (words.length == 1 && words[0].equalsIgnoreCase("I")) {
             executeCommand("inventory", new String[0], new String[0]);
             return;
@@ -136,7 +129,6 @@ public class CommandParser {
     }
 
     private ParsedCommand findCommandInSentence(String[] words) {
-        // Strategy 1: Look for explicit command words
         for (int i = 0; i < words.length; i++) {
             String word = words[i].toLowerCase();
             if (ALL_COMMAND_WORDS.containsKey(word)) {
@@ -144,29 +136,20 @@ public class CommandParser {
             }
         }
 
-        // Strategy 2: Check for implicit movement
         ParsedCommand movementCommand = checkForImplicitMovement(words);
         if (movementCommand != null) {
             return movementCommand;
         }
 
-        // Strategy 3: Check for contextual commands
         ParsedCommand contextCommand = checkForContextualCommands(words);
         if (contextCommand != null) {
             return contextCommand;
-        }
-
-        // Strategy 4: Default to first word if it's a known command
-        String firstWord = words[0].toLowerCase();
-        if (ALL_COMMAND_WORDS.containsKey(firstWord)) {
-            return createParsedCommand(ALL_COMMAND_WORDS.get(firstWord), words, 0);
         }
 
         return null;
     }
 
     private ParsedCommand createParsedCommand(String commandName, String[] words, int commandIndex) {
-        // Extract all arguments except the command word itself
         List<String> argsList = new ArrayList<>();
         for (int i = 0; i < words.length; i++) {
             if (i != commandIndex) {
@@ -176,13 +159,12 @@ public class CommandParser {
 
         String[] originalArgs = argsList.toArray(new String[0]);
 
-        // Create multiple argument variations for better matching
-        String[] filteredArgs = createArgumentVariations(originalArgs, commandName);
+        String[] filteredArgs = createArgumentVariations(originalArgs);
 
         return new ParsedCommand(commandName, originalArgs, filteredArgs);
     }
 
-    private String[] createArgumentVariations(String[] originalArgs, String commandName) {
+    private String[] createArgumentVariations(String[] originalArgs) {
         if (originalArgs.length == 0) {
             return new String[0];
         }
@@ -192,7 +174,6 @@ public class CommandParser {
         for (String arg : originalArgs) {
             String lowerArg = arg.toLowerCase();
 
-            // Keep numbers, game objects, directions, and important prepositions
             if (StringUtils.isNumber(arg) ||
                     GAME_OBJECTS.contains(lowerArg) ||
                     DIRECTION_WORDS.contains(lowerArg) ||
@@ -201,7 +182,6 @@ public class CommandParser {
             }
         }
 
-        // If we filtered out everything, use the first original arg
         if (bestArgs.isEmpty() && originalArgs.length > 0) {
             bestArgs.add(originalArgs[0].toLowerCase());
         }
@@ -213,7 +193,7 @@ public class CommandParser {
         for (String word : words) {
             String lowerWord = word.toLowerCase();
             if (DIRECTION_WORDS.contains(lowerWord)) {
-                String[] filteredArgs = createArgumentVariations(words, "go");
+                String[] filteredArgs = createArgumentVariations(words);
                 return new ParsedCommand("go", words, filteredArgs);
             }
         }
@@ -223,7 +203,6 @@ public class CommandParser {
     private ParsedCommand checkForContextualCommands(String[] words) {
         String sentence = String.join(" ", words).toLowerCase();
 
-        // Use helper methods to reduce duplication
         if (containsWords(sentence, "what") && containsAnyOf(sentence, "have", "carrying")) {
             return new ParsedCommand("inventory", new String[0], new String[0]);
         }
@@ -240,9 +219,35 @@ public class CommandParser {
             return new ParsedCommand("buy", new String[0], new String[0]);
         }
 
-        // Check for unlock-related phrases
         if (containsAnyOf(sentence, "unlock", "open") && containsAnyOf(sentence, "door", "basement")) {
-            return extractObjectCommand("unlock", words);
+            return extractObjectCommand("use", words);
+        }
+
+        // Updated game contextual commands
+        if (containsAnyOf(sentence, "play", "start") && containsAnyOf(sentence, "blackjack", "cards", "poker", "roulette")) {
+            return new ParsedCommand("play", words, createArgumentVariations(words));
+        }
+
+        // Handle single word game commands that should map to blackjack
+        if (words.length == 1) {
+            String word = words[0].toLowerCase();
+            if (word.equals("hit")) {
+                return new ParsedCommand("play", new String[]{"blackjack", "hit"}, new String[]{"blackjack", "hit"});
+            }
+            if (word.equals("stand") || word.equals("stay")) {
+                return new ParsedCommand("play", new String[]{"blackjack", "stand"}, new String[]{"blackjack", "stand"});
+            }
+            // Legacy support for "blackjack" command
+            if (word.equals("blackjack")) {
+                return new ParsedCommand("play", new String[]{"blackjack"}, new String[]{"blackjack"});
+            }
+        }
+
+        if (containsWords(sentence, "bet") || (containsAnyOf(sentence, "wager", "gamble") && containsAnyOf(sentence, "coins"))) {
+            List<String> betArgs = new ArrayList<>();
+            betArgs.add("blackjack");
+            betArgs.addAll(Arrays.asList(words));
+            return new ParsedCommand("play", betArgs.toArray(new String[0]), createArgumentVariations(betArgs.toArray(new String[0])));
         }
 
         if (containsAnyGameObject(sentence)) {
@@ -257,7 +262,6 @@ public class CommandParser {
         return null;
     }
 
-    // Helper methods to reduce duplication
     private boolean containsWords(String sentence, String word) {
         return sentence.contains(word);
     }
@@ -272,7 +276,7 @@ public class CommandParser {
 
     private ParsedCommand extractObjectCommand(String command, String[] words) {
         String[] originalArgs = words;
-        String[] filteredArgs = createArgumentVariations(originalArgs, command);
+        String[] filteredArgs = createArgumentVariations(originalArgs);
         return new ParsedCommand(command, originalArgs, filteredArgs);
     }
 

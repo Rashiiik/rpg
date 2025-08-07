@@ -45,10 +45,6 @@ public class Player {
         setHp(hp + amount);
     }
 
-    public void takeDamage(int damage) {
-        setHp(hp - damage);
-    }
-
     public void addGold(int amount) {
         setGold(gold + amount);
     }

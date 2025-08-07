@@ -24,11 +24,9 @@ public class TakeCommand implements Command, CommandParser.EnhancedCommand {
 
         Player player = game.getPlayer();
 
-        // Create search terms
         String originalTarget = StringUtils.buildStringFromArgs(originalArgs);
         String filteredTarget = StringUtils.buildStringFromArgs(filteredArgs);
 
-        // Use centralized search engine
         Item item = ItemSearchEngine.findInRoomProgressive(
                 game.getCurrentRoom(), originalTarget, filteredTarget
         );
@@ -39,13 +37,11 @@ public class TakeCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        // Check if inventory is full
         if (player.getInventory().isFull()) {
             game.getGui().displayMessage("Your inventory is full. You need to drop something first.");
             return;
         }
 
-        // Take the item
         game.getCurrentRoom().removeItem(item);
         player.addItem(item);
 
@@ -61,12 +57,10 @@ public class TakeCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        // Find items that might be similar
         String[] searchWords = searchTerm.toLowerCase().split("\\s+");
         for (Item roomItem : roomItems) {
             String itemName = roomItem.getName().toLowerCase();
 
-            // Check if any search word appears in the item name
             for (String searchWord : searchWords) {
                 if (itemName.contains(searchWord) && searchWord.length() > 2) {
                     game.getGui().displayMessage("Did you mean the " + roomItem.getName() + "?");
@@ -75,7 +69,6 @@ public class TakeCommand implements Command, CommandParser.EnhancedCommand {
             }
         }
 
-        // If no similar items found, just list what's available
         if (roomItems.size() == 1) {
             game.getGui().displayMessage("There is a " + roomItems.get(0).getName() + " here.");
         } else {
