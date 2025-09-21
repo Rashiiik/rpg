@@ -120,12 +120,8 @@ public class Shop extends Room {
     private void initializeShopInventory() {
         shopInventory = new ArrayList<>();
 
-        try {
-            shopInventory.add(new ShopItem(new Bullet(), 10, 8, 4));
-            shopInventory.add(new ShopItem(new OldCoin(), 5, 15, 7));
-        } catch (Exception e) {
-            System.err.println("Error initializing shop inventory: " + e.getMessage());
-        }
+        shopInventory.add(new ShopItem(new Bullet(), 10, 8, 4));
+        shopInventory.add(new ShopItem(new OldCoin(), 5, 15, 7));
     }
 
     @Override

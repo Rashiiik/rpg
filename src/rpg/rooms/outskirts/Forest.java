@@ -31,4 +31,20 @@ public class Forest extends Room {
         game.getGui().displayMessage("");
         displayConnections(game);
     }
+
+    public boolean handleExamine(Game game, String target) {
+        String lowerTarget = target.toLowerCase();
+
+        if (lowerTarget.contains("tree") || lowerTarget.contains("trees")) {
+            game.getGui().displayMessage("Massive, ancient trees that seem to whisper in the wind.");
+        }
+
+        if (lowerTarget.contains("path")) {
+            game.getGui().displayMessage("A winding path disappears into the forest depths.");
+        }
+
+        return false;
+    }
+
+
 }

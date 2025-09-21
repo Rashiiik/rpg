@@ -4,6 +4,9 @@ import rpg.commands.Command;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
+import rpg.rooms.outskirts.Forest;
+import rpg.rooms.town.Inn;
+import rpg.rooms.town.InnArchives;
 import rpg.rooms.town.Town;
 import rpg.rooms.tutorial.StartingAlley;
 import rpg.utils.ItemSearchEngine;
@@ -49,6 +52,27 @@ public class ExamineCommand implements Command {
         if (currentRoom instanceof Town) {
             Town town = (Town) currentRoom;
             if (town.handleExamine(game, target)) {
+                return;
+            }
+        }
+
+        if (currentRoom instanceof Inn) {
+            Inn inn = (Inn) currentRoom;
+            if (inn.handleExamine(game, target)) {
+                return;
+            }
+        }
+
+        if (currentRoom instanceof Forest) {
+            Forest forest = (Forest) currentRoom;
+            if (forest.handleExamine(game, target)) {
+                return;
+            }
+        }
+
+        if (currentRoom instanceof InnArchives) {
+            InnArchives innArchives = (InnArchives) currentRoom;
+            if (innArchives.handleExamine(game, target)) {
                 return;
             }
         }

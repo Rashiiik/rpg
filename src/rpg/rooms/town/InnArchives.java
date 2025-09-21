@@ -21,4 +21,30 @@ public class InnArchives extends Room {
         game.getGui().displayMessage("Shelves line the walls, packed with documents, maps, and records that tell a different story than what the townspeople remember.");
     }
 
+    public boolean handleExamine(Game game, String target) {
+        String lowerTarget = target.toLowerCase();
+
+        if (lowerTarget.contains("shelves")) {
+            game.getGui().displayMessage("Packed with documents spanning decades, many with pages mysteriously torn out.");
+            return true;
+        }
+
+        if (lowerTarget.contains("documents")) {
+            game.getGui().displayMessage("Records of strange disappearances, reality distortions, and cover-ups.");
+            return true;
+        }
+
+        if (lowerTarget.contains("maps")) {
+            game.getGui().displayMessage("Old town maps showing buildings and streets that no longer exist.");
+            return true;
+        }
+
+        if (lowerTarget.contains("tunnel")) {
+            game.getGui().displayMessage("A hidden passage leading deeper underground.");
+            return true;
+        }
+
+        return false;
+    }
+
 }
