@@ -18,7 +18,6 @@ public class Inventory {
         this(50); // Default max size
     }
 
-    // Add item to inventory
     public boolean addItem(Item item) {
         if (items.size() >= maxSize) {
             return false; // Inventory full
@@ -27,12 +26,10 @@ public class Inventory {
         return true;
     }
 
-    // Remove item from inventory
     public boolean removeItem(Item item) {
         return items.remove(item);
     }
 
-    // Remove item by name
     public boolean removeItem(String itemName) {
         Item item = findItem(itemName);
         if (item != null) {
@@ -41,7 +38,6 @@ public class Inventory {
         return false;
     }
 
-    // Remove specific quantity of items by name
     public boolean removeItems(String itemName, int quantity) {
         if (quantity <= 0) return false;
 
@@ -66,7 +62,6 @@ public class Inventory {
         return false;
     }
 
-    // Get count of specific item by name
     public int getItemCount(String itemName) {
         int count = 0;
         for (Item item : items) {
@@ -77,32 +72,26 @@ public class Inventory {
         return count;
     }
 
-    // Delegate to centralized search engine
     public Item findItem(String itemName) {
         return ItemSearchEngine.findItem(items, itemName);
     }
 
-    // Enhanced findItem method that tries multiple search strategies
     public Item findItemProgressive(String originalTerm, String filteredTerm) {
         return ItemSearchEngine.findItemProgressive(items, originalTerm, filteredTerm);
     }
 
-    // Check if inventory contains item
     public boolean hasItem(String itemName) {
         return findItem(itemName) != null;
     }
 
-    // Check if inventory contains specific item object
     public boolean hasItem(Item item) {
         return items.contains(item);
     }
 
-    // Get all items
     public List<Item> getItems() {
         return new ArrayList<>(items); // Return copy to prevent external modification
     }
 
-    // Get items by type
     public List<Item> getItemsByType(Class<? extends Item> type) {
         List<Item> result = new ArrayList<>();
         for (Item item : items) {
@@ -113,32 +102,26 @@ public class Inventory {
         return result;
     }
 
-    // Get inventory size
     public int getSize() {
         return items.size();
     }
 
-    // Get max inventory size
     public int getMaxSize() {
         return maxSize;
     }
 
-    // Check if inventory is full
     public boolean isFull() {
         return items.size() >= maxSize;
     }
 
-    // Check if inventory is empty
     public boolean isEmpty() {
         return items.isEmpty();
     }
 
-    // Clear inventory
     public void clear() {
         items.clear();
     }
 
-    // Get formatted inventory display
     public String getInventoryDisplay() {
         if (isEmpty()) {
             return "Your inventory is empty.";
@@ -155,7 +138,6 @@ public class Inventory {
         return sb.toString();
     }
 
-    // Get total value of all items
     public int getTotalValue() {
         int total = 0;
         for (Item item : items) {
@@ -164,7 +146,6 @@ public class Inventory {
         return total;
     }
 
-    // Set max size
     public void setMaxSize(int maxSize) {
         this.maxSize = maxSize;
     }

@@ -12,7 +12,6 @@ public class InventoryCommand implements Command {
         Player player = game.getPlayer();
 
         if (args.length == 0) {
-            // Show inventory
             displayInventory(game, player);
         } else if (args.length == 1) {
             String action = args[0].toLowerCase();
@@ -26,7 +25,6 @@ public class InventoryCommand implements Command {
                     clearInventory(game, player);
                     break;
                 default:
-                    // Show specific item details
                     showItemDetails(game, player, args[0]);
                     break;
             }

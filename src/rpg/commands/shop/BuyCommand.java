@@ -34,7 +34,6 @@ public class BuyCommand implements Command, CommandParser.EnhancedCommand {
         String itemName = StringUtils.buildStringFromArgs(filteredArgs);
         int quantity = 1;
 
-        // Check if quantity is specified
         if (filteredArgs.length > 1) {
             String lastArg = filteredArgs[filteredArgs.length - 1];
             if (StringUtils.isNumber(lastArg)) {
@@ -43,7 +42,6 @@ public class BuyCommand implements Command, CommandParser.EnhancedCommand {
                     game.getGui().displayMessage("Invalid quantity. Please specify a positive number.");
                     return;
                 }
-                // Remove the quantity from the item name
                 itemName = StringUtils.buildStringFromArgs(filteredArgs, 0, filteredArgs.length - 1);
             }
         }
@@ -72,7 +70,6 @@ public class BuyCommand implements Command, CommandParser.EnhancedCommand {
             return;
         }
 
-        // Create and execute transaction with explicit price
         Transaction transaction = new Transaction(TransactionType.BUY, shopItem.getItem(),
                 quantity, totalCost, game.getPlayer());
 

@@ -84,7 +84,6 @@ public class ItemSearchEngine {
     private static <T extends Item> T findByWordMatching(List<T> items, String searchTerm) {
         String[] searchWords = searchTerm.split("\\s+");
 
-        // Try matching all words
         for (T item : items) {
             if (matchesAllWords(item.getName().toLowerCase(), searchWords)) {
                 return item;
@@ -92,7 +91,7 @@ public class ItemSearchEngine {
         }
 
         for (String searchWord : searchWords) {
-            if (searchWord.length() > 2) { // Skip very short words
+            if (searchWord.length() > 2) {
                 for (T item : items) {
                     String[] itemWords = item.getName().toLowerCase().split("\\s+");
                     for (String itemWord : itemWords) {

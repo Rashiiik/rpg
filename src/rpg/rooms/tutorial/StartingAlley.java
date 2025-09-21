@@ -210,23 +210,11 @@ public class StartingAlley extends Room {
     // Handle using items on things in this room
     @Override
     public boolean handleUseItemOn(Game game, Player player, Item item, String targetName) {
-        // DEBUG: Add debug output to track what's happening
-        System.out.println("DEBUG - StartingAlley.handleUseItemOn called");
-        System.out.println("DEBUG - Item: " + (item != null ? item.getClass().getSimpleName() + " - " + item.getName() : "null"));
-        System.out.println("DEBUG - Target: '" + targetName + "'");
-
-        // Add null checks for safety
-        if (game == null || player == null || item == null || targetName == null) {
-            System.out.println("DEBUG - Null parameter detected in StartingAlley");
-            return false;
-        }
 
         if (item instanceof Key) {
             Key key = (Key) item;
-            System.out.println("DEBUG - Key type: " + key.getKeyType());
 
             String lowerTarget = targetName.toLowerCase().trim();
-            System.out.println("DEBUG - Lower target: '" + lowerTarget + "'");
 
             if ("Tutorial".equals(key.getKeyType())) {
                 boolean isDoorTarget = lowerTarget.contains("door") ||
@@ -237,7 +225,6 @@ public class StartingAlley extends Room {
                         lowerTarget.contains("rusted") ||
                         lowerTarget.contains("metal");
 
-                System.out.println("DEBUG - Is door target: " + isDoorTarget);
 
                 if (isDoorTarget) {
                     if (game.getStoryFlags().hasFlag("tutorial_door_unlocked")) {
@@ -245,20 +232,17 @@ public class StartingAlley extends Room {
                         return true;
                     }
 
-                    System.out.println("DEBUG - Calling unlockDoor");
                     unlockDoor(game, player, item);
                     return true;
                 } else {
-                    // Key doesn't match this target in this room
                     game.getGui().displayMessage("The " + key.getName() + " doesn't seem to work on " + targetName + ".");
                     game.getGui().displayMessage("Try using it on the 'iron door' or just 'door'.");
-                    return true; // We handled the attempt, even if it failed
+                    return true;
                 }
             }
         }
 
-        System.out.println("DEBUG - No matching interaction found in StartingAlley");
-        return false; // This room doesn't handle this interaction
+        return false;
     }
 
     private void unlockDoor(Game game, Player player, Item key) {
@@ -271,13 +255,10 @@ public class StartingAlley extends Room {
         game.getGui().displayMessage("Warm light spills through the opening, cutting through the fog.");
         game.getGui().displayMessage("Beyond, you can see a town square with cobblestone streets and welcoming buildings.");
 
-        // Remove the key from player's inventory
         player.removeItem(key);
 
-        // Mark door as unlocked
         game.getStoryFlags().addFlag("tutorial_door_unlocked");
 
-        // Complete tutorial when door is unlocked
         completeTutorial(game);
     }
 
@@ -295,7 +276,6 @@ public class StartingAlley extends Room {
         game.getStoryFlags().addFlag("tutorial_complete");
     }
 
-    // Override movement methods to handle going to town
     @Override
     public boolean hasConnection(String direction) {
         String lowerDirection = direction.toLowerCase();

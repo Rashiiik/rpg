@@ -44,7 +44,6 @@ public class ShopItem {
         stock += amount;
     }
 
-    // Getters and setters
     public Item getItem() { return item; }
     public int getStock() { return stock; }
     public int getBuyPrice() { return buyPrice; }

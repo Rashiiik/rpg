@@ -5,9 +5,8 @@ import rpg.rooms.town.Town;
 import rpg.rooms.town.Shop;
 import rpg.rooms.town.Inn;
 import rpg.rooms.town.TownCenter;
-import rpg.rooms.town.ShopBasement;
 import rpg.rooms.tutorial.StartingAlley;
-import rpg.rooms.outskirts.Forest;
+import rpg.rooms.outskirts.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +28,10 @@ public class RoomManager {
         Inn inn = new Inn();
         TownCenter townCenter = new TownCenter();
         Forest forest = new Forest();
+        ForestPath forestPath = new ForestPath();
+        ForestShrine forestShrine = new ForestShrine();
+        ForestClearing forestClearing = new ForestClearing();
+        RuinedGlade ruinedGlade = new RuinedGlade();
 
         rooms.put("alley", startingAlley);
         rooms.put("startingalley", startingAlley);
@@ -42,6 +45,10 @@ public class RoomManager {
         rooms.put("towncenter", townCenter);
         rooms.put("center", townCenter);
         rooms.put("forest", forest);
+        rooms.put("forestpath", forestPath);
+        rooms.put("forestshrine", forestShrine);
+        rooms.put("forestclearing", forestClearing);
+        rooms.put("ruinedglade", ruinedGlade);
 
         rooms.put("basement", shop.getBasement());
         rooms.put("shopbasement", shop.getBasement());
@@ -56,6 +63,10 @@ public class RoomManager {
         Room inn = rooms.get("inn");
         Room townCenter = rooms.get("towncenter");
         Room forest = rooms.get("forest");
+        Room forestPath = rooms.get("forestpath");
+        Room forestShrine = rooms.get("forestshrine");
+        Room forestClearing = rooms.get("forestclearing");
+        Room ruinedGlade = rooms.get("ruinedglade");
 
         startingAlley.addConnection("forward", town);
         startingAlley.addConnection("through", town);
@@ -89,6 +100,28 @@ public class RoomManager {
         forest.addConnection("north", town);
         forest.addConnection("town", town);
         forest.addConnection("back", town);
+        forest.addConnection("south", forestPath);
+        forest.addConnection("forest path", forestPath);
+
+        forestPath.addConnection("north", forest);
+        forestPath.addConnection("forest", forest);
+        forestPath.addConnection("back", forest);
+        forestPath.addConnection("south", forestClearing);
+        forestPath.addConnection("forest clearing", forestClearing);
+        forestPath.addConnection("west", forestShrine);
+        forestPath.addConnection("forest shringe", forestShrine);
+
+        forestClearing.addConnection("north", forestPath);;
+        forestClearing.addConnection("forest path", forestPath);
+        forestClearing.addConnection("back", forestPath);
+        forestClearing.addConnection("south", ruinedGlade);
+
+        forestShrine.addConnection("east", forestPath);
+        forestShrine.addConnection("back", forestPath);
+        forestShrine.addConnection("ruined glade", ruinedGlade);
+
+        ruinedGlade.addConnection("back", forestClearing);
+        ruinedGlade.addConnection("forest shrine", forestShrine);
     }
 
     public Room getRoom(String roomId) {

@@ -58,7 +58,6 @@ public class StringUtils {
         String trimmed = input.trim();
         String lower = trimmed.toLowerCase();
 
-        // Remove leading articles
         if (lower.startsWith("the ")) {
             return trimmed.substring(4);
         } else if (lower.startsWith("a ")) {

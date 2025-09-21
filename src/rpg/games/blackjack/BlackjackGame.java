@@ -17,7 +17,6 @@ public class BlackjackGame {
         DEALER_WIN,
         PUSH,
         PLAYER_BLACKJACK,
-        ONGOING
     }
 
     private Deck deck;
@@ -43,13 +42,11 @@ public class BlackjackGame {
             return false;
         }
 
-        // Check if player has enough gold
         if (player.getGold() < amount) {
             rpgGame.getGui().displayMessage("You don't have enough gold! You have " + player.getGold() + " gold.");
             return false;
         }
 
-        // Remove the bet amount from player's gold immediately
         if (!player.removeGold(amount)) {
             rpgGame.getGui().displayMessage("Failed to place bet.");
             return false;
@@ -65,7 +62,6 @@ public class BlackjackGame {
         playerHand.clear();
         dealerHand.clear();
 
-        // Deal two cards to each
         playerHand.addCard(deck.dealCard());
         dealerHand.addCard(deck.dealCard());
         playerHand.addCard(deck.dealCard());
@@ -73,27 +69,21 @@ public class BlackjackGame {
 
         state = GameState.DEALING;
 
-        // Display initial deal
         rpgGame.getGui().displayMessage("=== Cards Dealt ===");
         rpgGame.getGui().displayMessage("Your hand: " + playerHand.toString());
         rpgGame.getGui().displayMessage("Dealer's hand: " + dealerHand.getDisplayString(true));
 
-        // Check for blackjacks
         if (playerHand.isBlackjack()) {
             if (dealerHand.isBlackjack()) {
-                // Both have blackjack - push
                 endGame(GameResult.PUSH);
             } else {
-                // Player blackjack wins
                 endGame(GameResult.PLAYER_BLACKJACK);
             }
         } else if (dealerHand.isBlackjack()) {
-            // Dealer blackjack wins
             rpgGame.getGui().displayMessage("Dealer reveals: " + dealerHand.toString());
             rpgGame.getGui().displayMessage("Dealer has blackjack!");
             endGame(GameResult.DEALER_WIN);
         } else {
-            // Continue game
             state = GameState.PLAYER_TURN;
             rpgGame.getGui().displayMessage("");
             rpgGame.getGui().displayMessage("Your turn! Type 'hit' to draw a card or 'stand' to stay.");
@@ -145,7 +135,6 @@ public class BlackjackGame {
             rpgGame.getGui().displayMessage("Dealer's hand: " + dealerHand.toString());
         }
 
-        // Determine winner
         if (dealerHand.isBust()) {
             rpgGame.getGui().displayMessage("Dealer busts!");
             endGame(GameResult.PLAYER_WIN);
@@ -187,7 +176,6 @@ public class BlackjackGame {
             case DEALER_WIN -> {
                 rpgGame.getGui().displayMessage("Dealer wins. (" + dealerHand.getValue() + " vs " + playerHand.getValue() + ")");
                 rpgGame.getGui().displayMessage("You lost " + currentBet + " gold.");
-                // Gold was already removed when bet was placed, so don't remove again
                 rpgGame.getGui().displayMessage("Your gold: " + player.getGold());
             }
             case PUSH -> {

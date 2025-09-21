@@ -77,7 +77,6 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
         String itemName = "";
         int quantity = 1;
 
-        // Strategy 1: Look for quantity at the end
         if (originalArgs.length > 0) {
             String lastArg = originalArgs[originalArgs.length - 1];
             if (StringUtils.isNumber(lastArg)) {
@@ -85,15 +84,12 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
                 if (quantity <= 0) {
                     quantity = 1;
                 }
-                // Build item name from all args except the last one
                 itemName = StringUtils.buildStringFromArgs(originalArgs, 0, originalArgs.length - 1);
             } else {
-                // No quantity specified, use all args for item name
                 itemName = StringUtils.buildStringFromArgs(originalArgs);
             }
         }
 
-        // Strategy 2: Also try with filtered args if original didn't work
         if (itemName.trim().isEmpty() && filteredArgs.length > 0) {
             itemName = StringUtils.buildStringFromArgs(filteredArgs);
         }
@@ -102,12 +98,10 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
     }
 
     private Item findItemToSell(Game game, String itemName, String[] originalArgs) {
-        // Strategy 1: Try the constructed item name
         String filteredItemName = ItemSearchEngine.filterSearchTerm(itemName);
         Item item = ItemSearchEngine.findInInventoryProgressive(game.getPlayer(), itemName, filteredItemName);
         if (item != null) return item;
 
-        // Strategy 2: Try each individual word from original args
         for (String word : originalArgs) {
             if (!StringUtils.isNumber(word)) {
                 item = ItemSearchEngine.findInInventory(game.getPlayer(), word);
@@ -115,7 +109,6 @@ public class SellCommand implements Command, CommandParser.EnhancedCommand {
             }
         }
 
-        // Strategy 3: Try combinations of words
         for (int i = 0; i < originalArgs.length; i++) {
             for (int j = i + 1; j <= originalArgs.length; j++) {
                 String combination = StringUtils.buildStringFromArgs(originalArgs, i, j);

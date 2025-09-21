@@ -7,12 +7,6 @@ public class Town extends Room {
 
     public Town() {
         super("Town Square", "A bustling town square with merchants and travelers.");
-        initializeConnections();
-    }
-
-    private void initializeConnections() {
-        // We'll add connections when other rooms are created
-        // For now, we'll add them in the Game class or a RoomManager
     }
 
     @Override
@@ -33,5 +27,38 @@ public class Town extends Room {
         game.getGui().displayMessage("- A path to the forest to the south");
         game.getGui().displayMessage("");
         displayConnections(game);
+    }
+
+    public boolean handleExamine(Game game, String target) {
+        String lowerTarget = target.toLowerCase();
+
+        if (lowerTarget.contains("people") || lowerTarget.contains("merchants") || lowerTarget.contains("travellers")) {
+            examinePeople(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("fountain")) {
+            examineFountain(game);
+            return true;
+        }
+
+        if (lowerTarget.contains("buildings")) {
+            examineBuildings(game);
+            return true;
+        }
+
+        return false;
+    }
+
+    public void examinePeople(Game game) {
+        game.getGui().displayMessage("The townspeople seem ordinary, but none acknowledge your sudden appearance.");
+    }
+
+    public void examineFountain(Game game) {
+        game.getGui().displayMessage("A stone fountain sits in the center, water trickling peacefully.");
+    }
+
+    public void examineBuildings(Game game) {
+        game.getGui().displayMessage("Various shops and buildings surround the square.");
     }
 }

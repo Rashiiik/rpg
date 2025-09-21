@@ -29,8 +29,6 @@ public class Game {
         commandParser = new CommandParser(this); // Initialize command parser
         isRunning = true;
 
-        // Delay the room entry until after GUI is fully initialized
-        // This ensures the welcome message appears before the room description
         SwingUtilities.invokeLater(() -> {
             currentRoom.enter(this);
         });
@@ -41,13 +39,11 @@ public class Game {
             return;
         }
 
-        // Handle quit command directly (since it exits the game)
         if (input.trim().toLowerCase().equals("quit")) {
             quit();
             return;
         }
 
-        // Use command parser for all other commands
         commandParser.parseAndExecute(input);
     }
 
@@ -57,7 +53,6 @@ public class Game {
         System.exit(0);
     }
 
-    // Getters
     public Player getPlayer() { return player; }
     public Room getCurrentRoom() { return currentRoom; }
     public GameGUI getGui() { return gui; }
@@ -68,7 +63,6 @@ public class Game {
     public RoomManager getRoomManager() { return roomManager; }
     public boolean isRunning() { return isRunning; }
 
-    // Setters
     public void setCurrentRoom(Room room) {
         this.currentRoom = room;
     }

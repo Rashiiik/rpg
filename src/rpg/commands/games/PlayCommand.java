@@ -8,7 +8,6 @@ import rpg.utils.StringUtils;
 
 public class PlayCommand implements Command, CommandParser.EnhancedCommand {
     private BlackjackGame blackjackGame;
-    // TODO: Add other games here (poker, roulette, etc.)
 
     @Override
     public void execute(Game game, String[] args) {
@@ -69,7 +68,6 @@ public class PlayCommand implements Command, CommandParser.EnhancedCommand {
             case "quit", "leave", "exit" -> handleBlackjackQuit(game);
             case "rules" -> showBlackjackRules(game);
             default -> {
-                // Check if it's a number (implicit bet)
                 if (StringUtils.isNumber(action)) {
                     handleBlackjackBet(game, blackjackArgs);
                 } else {
@@ -155,7 +153,7 @@ public class PlayCommand implements Command, CommandParser.EnhancedCommand {
 
         game.getGui().displayMessage("You step away from the blackjack table.");
         game.getGui().displayMessage("The innkeeper waves farewell. 'Come back anytime!'");
-        blackjackGame = null; // Reset the game
+        blackjackGame = null;
     }
 
     private void showBlackjackRules(Game game) {

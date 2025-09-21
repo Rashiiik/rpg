@@ -18,7 +18,6 @@ public class Player {
         this.inventory = new Inventory(50); // 50 item slots
     }
 
-    // Getters
     public String getName() { return name; }
     public int getHp() { return hp; }
     public int getMaxHp() { return maxHp; }
@@ -29,7 +28,6 @@ public class Player {
         return game;
     }
 
-    // Setters
     public void setName(String name) { this.name = name; }
     public void setHp(int hp) { this.hp = Math.max(0, Math.min(hp, maxHp)); }
     public void setMaxHp(int maxHp) { this.maxHp = maxHp; }
@@ -57,7 +55,6 @@ public class Player {
         return false;
     }
 
-    // Inventory convenience methods
     public boolean addItem(rpg.items.Item item) {
         return inventory.addItem(item);
     }

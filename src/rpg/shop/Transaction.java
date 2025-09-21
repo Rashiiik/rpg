@@ -10,7 +10,6 @@ public class Transaction {
     private int totalPrice;
     private Player player;
 
-    // Constructor with explicit total price
     public Transaction(TransactionType type, Item item, int quantity, int totalPrice, Player player) {
         this.type = type;
         this.item = item;
@@ -19,7 +18,6 @@ public class Transaction {
         this.totalPrice = totalPrice;
     }
 
-    // Original constructor for backward compatibility
     public Transaction(TransactionType type, Item item, int quantity, Player player) {
         this.type = type;
         this.item = item;

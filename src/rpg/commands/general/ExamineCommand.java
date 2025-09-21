@@ -4,6 +4,7 @@ import rpg.commands.Command;
 import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
+import rpg.rooms.town.Town;
 import rpg.rooms.tutorial.StartingAlley;
 import rpg.utils.ItemSearchEngine;
 import rpg.utils.StringUtils;
@@ -24,14 +25,12 @@ public class ExamineCommand implements Command {
         Player player = game.getPlayer();
         Room currentRoom = game.getCurrentRoom();
 
-        // Check inventory first
         Item item = ItemSearchEngine.findInInventoryProgressive(player, target, filteredTarget);
         if (item != null) {
             displayItemExamination(game, item);
             return;
         }
 
-        // Check if current room has custom examination handling
         if (currentRoom instanceof Shop) {
             Shop shop = (Shop) currentRoom;
             if (shop.handleExamine(game, target)) {
@@ -47,24 +46,27 @@ public class ExamineCommand implements Command {
             }
         }
 
-        // Check room items
+        if (currentRoom instanceof Town) {
+            Town town = (Town) currentRoom;
+            if (town.handleExamine(game, target)) {
+                return;
+            }
+        }
+
         Item roomItem = ItemSearchEngine.findInRoomProgressive(currentRoom, target, filteredTarget);
         if (roomItem != null) {
             displayItemExamination(game, roomItem);
             return;
         }
 
-        // Nothing found
         game.getGui().displayMessage("You look closely but don't find anything called '" + target + "' to examine.");
     }
 
     private void displayItemExamination(Game game, Item item) {
-        // Basic item info
         game.getGui().displayMessage("=== " + item.getName() + " ===");
         game.getGui().displayMessage(item.getDescription());
         game.getGui().displayMessage("Value: " + item.getValue() + " gold");
 
-        // Let the item provide detailed examination if it has any
         item.examine(game);
     }
 

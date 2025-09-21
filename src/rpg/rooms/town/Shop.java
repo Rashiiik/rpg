@@ -14,7 +14,7 @@ public class Shop extends Room {
     private ShopBasement basement;
 
     public Shop() {
-        super("Item Shop", "Tucked away in a fog-drenched alley of the Backlund docks—where gas lamps flicker and shadows stretch with minds of their own—stands a narrow, leaning storefront with windows dulled by age and secrets.");
+        super("General Store", "A well-stocked general store with shelves full of various supplies.");
 
         addItem(new OldCoin());
         addItem(new Key("Basement"));
@@ -252,28 +252,21 @@ public class Shop extends Room {
     }
 
     private void examineShelves(Game game) {
-        game.getGui().displayMessage("You examine the shelves more closely.");
-        game.getGui().displayMessage("Everything is organized by more than just type - there's a pattern here.");
-        game.getGui().displayMessage("Magical items are subtly separated from mundane ones.");
-        game.getGui().displayMessage("Some items seem to be placed deliberately to hide others behind them.");
+        game.getGui().displayMessage("The shelves are packed with tools, food, and other supplies.");
     }
 
     private void examineWindows(Game game) {
         game.getGui().displayMessage("You peer through the grimy windows.");
-        game.getGui().displayMessage("The dirt seems intentionally placed to obscure the view.");
-        game.getGui().displayMessage("You can just make out shadowy figures moving in the street outside.");
-        game.getGui().displayMessage("This shop exists in a place between worlds...");
+        game.getGui().displayMessage("The dirt seems to obscure the view.");
     }
 
     private void examineBasementDoor(Game game) {
         if (game.getStoryFlags().hasFlag("basement_unlocked")) {
             game.getGui().displayMessage("The heavy wooden door stands open, revealing stone steps descending into darkness.");
-            game.getGui().displayMessage("The iron bands are purely decorative - the real security was the lock.");
             game.getGui().displayMessage("A cool breeze carries the scent of old stone and mysterious herbs from below.");
         } else {
             game.getGui().displayMessage("You examine the basement door closely.");
-            game.getGui().displayMessage("The wood is thick and sturdy, reinforced with iron bands.");
-            game.getGui().displayMessage("The large keyhole is ornately decorated with mystical symbols.");
+            game.getGui().displayMessage("The large keyhole is ornately decorated.");
             game.getGui().displayMessage("You can hear faint sounds from below - this basement is not empty.");
         }
     }
@@ -311,7 +304,6 @@ public class Shop extends Room {
         if (!game.getStoryFlags().hasFlag("basement_unlocked")) {
             game.getStoryFlags().addFlag("basement_unlocked");
             game.getGui().displayMessage("You unlock the basement door with the key!");
-            game.getGui().displayMessage("The heavy wooden door creaks open, revealing stone stairs descending into darkness.");
             game.getGui().displayMessage("You can now go 'down' to explore the basement.");
         }
     }

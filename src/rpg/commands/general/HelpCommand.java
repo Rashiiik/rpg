@@ -9,7 +9,6 @@ public class HelpCommand implements Command {
     @Override
     public void execute(Game game, String[] args) {
         if (args.length > 0) {
-            // Show help for specific command
             String commandName = args[0].toLowerCase();
             Command command = game.getCommandParser().getCommands().get(commandName);
             if (command != null) {
@@ -22,12 +21,10 @@ public class HelpCommand implements Command {
                 game.getGui().displayMessage("Unknown command: " + commandName);
             }
         } else {
-            // Show general help
             game.getGui().displayMessage("=== Available Commands ===");
 
             Map<String, Command> commands = game.getCommandParser().getCommands();
 
-            // Display unique commands (avoiding duplicates from aliases)
             commands.entrySet().stream()
                     .filter(entry -> !isAlias(entry.getKey(), entry.getValue()))
                     .sorted(Map.Entry.comparingByKey())
@@ -41,7 +38,6 @@ public class HelpCommand implements Command {
     }
 
     private boolean isAlias(String commandName, Command command) {
-        // Check if this command name is an alias (not the primary name)
         for (String alias : command.getAliases()) {
             if (alias.equals(commandName)) {
                 return true;

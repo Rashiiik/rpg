@@ -27,7 +27,6 @@ public class GameGUI extends JFrame {
     private List<String> commandHistory;
     private int historyIndex;
 
-    // Enhanced color scheme
     private static final Color BACKGROUND_COLOR = new Color(18, 18, 18);
     private static final Color OUTPUT_BACKGROUND = new Color(25, 25, 25);
     private static final Color INPUT_BACKGROUND = new Color(35, 35, 35);
@@ -50,31 +49,24 @@ public class GameGUI extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
 
-        // Set application icon (you can replace with your own icon)
         try {
             setIconImage(createGameIcon());
         } catch (Exception e) {
-            // Icon creation failed, continue without icon
+
         }
 
-        // Create main layout with improved spacing
         setLayout(new BorderLayout(0, 0));
         getContentPane().setBackground(BACKGROUND_COLOR);
 
-        // Create header panel
         createHeaderPanel();
 
-        // Create main game output area
         createGameOutputArea();
 
-        // Create input area
         createInputArea();
 
-        // Show the window with fade-in effect
         setVisible(true);
         commandInput.requestFocus();
 
-        // Display welcome message
         displayWelcomeMessage();
     }
 
@@ -100,7 +92,6 @@ public class GameGUI extends JFrame {
 
         headerPanel.add(titleContainer, BorderLayout.CENTER);
 
-        // Add separator line
         JPanel separator = new JPanel();
         separator.setBackground(BORDER_COLOR);
         separator.setPreferredSize(new Dimension(0, 1));
@@ -171,7 +162,6 @@ public class GameGUI extends JFrame {
         commandInput.setCaretColor(ACCENT_COLOR);
         commandInput.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
 
-        // Add command history navigation
         commandInput.addKeyListener(new KeyListener() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -199,7 +189,6 @@ public class GameGUI extends JFrame {
         inputPanel.add(promptLabel, BorderLayout.WEST);
         inputPanel.add(commandInput, BorderLayout.CENTER);
 
-        // Add help text
         JLabel helpLabel = new JLabel("Use ↑↓ for command history | Type 'help' for commands");
         helpLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
         helpLabel.setForeground(TEXT_COLOR.darker());
@@ -208,7 +197,6 @@ public class GameGUI extends JFrame {
         inputContainer.add(inputPanel, BorderLayout.CENTER);
         inputContainer.add(helpLabel, BorderLayout.SOUTH);
 
-        // Create combined south panel for input and status
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.setBackground(BACKGROUND_COLOR);
         southPanel.add(inputContainer, BorderLayout.CENTER);
@@ -242,22 +230,18 @@ public class GameGUI extends JFrame {
     private void processInput() {
         String input = commandInput.getText().trim();
         if (!input.isEmpty()) {
-            // Add to command history
+
             commandHistory.add(input);
             historyIndex = commandHistory.size();
 
-            // Display the command with enhanced formatting
             displayMessage("> " + input, ACCENT_COLOR);
             displayMessage("", TEXT_COLOR); // Add blank line for readability
             commandInput.setText("");
 
-            // Update status
             updateStatus("Processing command...");
 
-            // Process the command
             game.processCommand(input);
 
-            // Update status
             updateStatus("Ready");
         }
     }
@@ -281,12 +265,10 @@ public class GameGUI extends JFrame {
         displayMessage(message, TEXT_COLOR);
     }
 
-    // Add append method for compatibility with existing code
     public void append(String message) {
         displayMessage(message, TEXT_COLOR);
     }
 
-    // If your Game class needs direct access to gameOutput, provide a getter
     public JTextPane getGameOutput() {
         return gameOutput;
     }
@@ -294,19 +276,15 @@ public class GameGUI extends JFrame {
     public void displayMessage(String message, Color color) {
         SwingUtilities.invokeLater(() -> {
             try {
-                // Create a SimpleAttributeSet with the specified color
                 SimpleAttributeSet attributeSet = new SimpleAttributeSet();
                 StyleConstants.setForeground(attributeSet, color);
                 StyleConstants.setFontFamily(attributeSet, "Consolas");
                 StyleConstants.setFontSize(attributeSet, 14);
 
-                // Insert the text with styling
                 doc.insertString(doc.getLength(), message + "\n", attributeSet);
 
-                // Auto-scroll to bottom
                 gameOutput.setCaretPosition(doc.getLength());
             } catch (BadLocationException e) {
-                // Fallback: just set the text without styling
                 gameOutput.setText(gameOutput.getText() + message + "\n");
                 gameOutput.setCaretPosition(gameOutput.getDocument().getLength());
             }
@@ -338,13 +316,11 @@ public class GameGUI extends JFrame {
     }
 
     private Image createGameIcon() {
-        // Create a simple game icon programmatically
         int size = 32;
         java.awt.image.BufferedImage icon = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = icon.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Draw a simple game controller or adventure-themed icon
         g2d.setColor(ACCENT_COLOR);
         g2d.fillOval(4, 4, size-8, size-8);
         g2d.setColor(BACKGROUND_COLOR);
