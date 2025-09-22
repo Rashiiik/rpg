@@ -5,6 +5,7 @@ import rpg.core.Game;
 import rpg.player.Player;
 import rpg.items.Item;
 import rpg.rooms.outskirts.Forest;
+import rpg.rooms.outskirts.RuinedGlade;
 import rpg.rooms.town.Inn;
 import rpg.rooms.town.InnArchives;
 import rpg.rooms.town.Town;
@@ -73,6 +74,13 @@ public class ExamineCommand implements Command {
         if (currentRoom instanceof InnArchives) {
             InnArchives innArchives = (InnArchives) currentRoom;
             if (innArchives.handleExamine(game, target)) {
+                return;
+            }
+        }
+
+        if (currentRoom instanceof RuinedGlade) {
+            RuinedGlade ruinedGlade = (RuinedGlade) currentRoom;
+            if (ruinedGlade.handleExamine(game, target)) {
                 return;
             }
         }

@@ -109,7 +109,7 @@ public class RoomManager {
         forestPath.addConnection("south", forestClearing);
         forestPath.addConnection("forest clearing", forestClearing);
         forestPath.addConnection("west", forestShrine);
-        forestPath.addConnection("forest shringe", forestShrine);
+        forestPath.addConnection("forest shrine", forestShrine);
 
         forestClearing.addConnection("north", forestPath);;
         forestClearing.addConnection("forest path", forestPath);

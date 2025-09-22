@@ -13,7 +13,6 @@ public class Inn extends Room {
     public Inn() {
         super("The Weary Traveler Inn", "A cozy inn with a warm fireplace and comfortable beds.");
         this.innArchives = new InnArchives();
-        addItem(new Key("archives"));
     }
 
     @Override

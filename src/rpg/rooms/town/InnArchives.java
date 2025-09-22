@@ -5,8 +5,13 @@ import rpg.rooms.Room;
 
 public class InnArchives extends Room {
 
+    private ForgottenTunnels forgottenTunnels;
+
     public InnArchives() {
         super("Hidden Archives", "A dusty underground chamber filled with old records and forgotten documents.");
+        this.forgottenTunnels = new ForgottenTunnels();
+
+        setupForgottenTunnelsConnection();
     }
 
     @Override
@@ -45,6 +50,17 @@ public class InnArchives extends Room {
         }
 
         return false;
+    }
+
+    private void setupForgottenTunnelsConnection() {
+        forgottenTunnels.addConnection("up", this);
+        forgottenTunnels.addConnection("upstairs", this);
+        forgottenTunnels.addConnection("inn", this);
+        forgottenTunnels.addConnection("back", this);
+
+        this.addConnection("down", forgottenTunnels);
+        this.addConnection("forward", forgottenTunnels);
+        this.addConnection("basement", forgottenTunnels);
     }
 
 }
